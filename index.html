@@ -6,52 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SantyWin Bingo — Verificador de Cartones y Editor de Patrones</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
-  <!-- PANTALLA DE BLOQUEO Y ACCESO RESTRINGIDO POR CORREO GOOGLE -->
-  <div id="authLockScreen" class="auth-lock-screen">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <span>SW</span><span>75</span>
-      </div>
-      <h2>SantyWin <span class="badge-clean">BINGO</span></h2>
-      <p class="auth-subtitle">Acceso exclusivo para correos Google autorizados por el administrador.</p>
-
-      <!-- Botón Oficial de Google (Firebase Authentication) -->
-      <div id="googleSignInContainer" class="google-signin-container">
-        <button type="button" id="btnFirebaseGoogleLogin" class="btn-google-oauth">
-          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          </svg>
-          <span>Continuar con Google (Firebase Auth)</span>
-        </button>
-        <div id="googleSignInButton"></div>
-        <div class="auth-divider"><span>o ingresa con tu correo autorizado y PIN</span></div>
-      </div>
-
-      <!-- Formulario de ingreso con correo Gmail autorizado + PIN -->
-      <form id="emailPinLoginForm" class="auth-form" autocomplete="on">
-        <label class="form-label">
-          Correo Google (@gmail.com)
-          <input type="email" id="loginEmailInput" placeholder="tucorreo@gmail.com" required />
-        </label>
-        <label class="form-label">
-          Clave / PIN de Acceso
-          <input type="password" id="loginPinInput" placeholder="Ingresa tu PIN asignado" required />
-        </label>
-        <div id="loginErrorMsg" class="validation-error hidden"></div>
-        <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
-          🔐 Entrar al Sistema
-        </button>
-      </form>
-    </div>
-  </div>
-
   <!-- Top Header -->
   <header class="app-header">
     <div class="brand">
@@ -65,15 +22,6 @@
     </div>
 
     <div class="header-actions">
-      <div id="userSessionBar" class="user-session-bar hidden">
-        <span id="currentUserEmailBadge" class="user-email-badge" title="Usuario autenticado"></span>
-        <button id="btnOpenAdminModal" type="button" class="btn btn-xs btn-secondary hidden" title="Administrar correos Google con permiso de acceso">
-          👑 Accesos
-        </button>
-        <button id="btnLogout" type="button" class="btn btn-xs btn-ghost" title="Cerrar sesión">
-          🚪 Salir
-        </button>
-      </div>
       <button id="btnSoundToggle" class="btn btn-icon" title="Activar/Desactivar sonidos">
         <span id="soundIcon">🔊</span>
       </button>
@@ -385,63 +333,6 @@
     </div>
   </div>
 
-  <!-- MODAL 4: Admin Panel — Gestión de Correos Google Autorizados -->
-  <div id="adminAuthModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
-    aria-labelledby="adminModalTitle">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
-        <div>
-          <h2 id="adminModalTitle">👑 Panel de Administrador — Correos Autorizados</h2>
-          <p class="modal-subtitle">Solo los correos Google registrados y activos en esta lista pueden entrar a SantyWin Bingo.</p>
-        </div>
-        <button class="btn-close" data-close-modal="adminAuthModal" aria-label="Cerrar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <!-- Agregar nuevo correo -->
-        <form id="addAuthorizedUserForm" class="admin-add-user-form" autocomplete="off">
-          <label class="form-label flex-1">
-            Correo Google (@gmail.com)
-            <input type="email" id="newAuthEmailInput" placeholder="ejemplo@gmail.com" required />
-          </label>
-          <label class="form-label">
-            Nombre / Jugador
-            <input type="text" id="newAuthNameInput" placeholder="Ej: Carlos" maxlength="30" />
-          </label>
-          <label class="form-label">
-            PIN / Clave asignada
-            <input type="text" id="newAuthPinInput" placeholder="Ej: 1234" required maxlength="20" />
-          </label>
-          <button type="submit" class="btn btn-primary">➕ Autorizar Correo</button>
-        </form>
-
-        <!-- Tabla de correos autorizados -->
-        <div class="admin-users-list-wrapper">
-          <h3>Correos con Acceso (<span id="authorizedUsersCount">1</span>)</h3>
-          <div id="authorizedUsersList" class="admin-users-list">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-        <!-- Estado de Conexión Firebase Auth + Cloud Firestore -->
-        <details class="admin-oauth-details">
-          <summary>🔥 Conectado a Firebase Authentication + Cloud Firestore (santywin-bingo-2026)</summary>
-          <div class="admin-oauth-box">
-            <p class="hint-text">
-              ✅ Tu proyecto está conectado a <strong>Firebase Authentication</strong> y <strong>Cloud Firestore</strong> (ID: <code>santywin-bingo-2026</code>). Todos los correos autorizados aquí y los cartones de cada usuario se sincronizan en la nube.
-            </p>
-            <div class="admin-oauth-row">
-              <input type="text" id="adminGoogleClientIdInput" placeholder="Client ID adicional (opcional)" />
-              <button type="button" id="btnSaveGoogleClientId" class="btn btn-sm btn-secondary">Guardar</button>
-            </div>
-          </div>
-        </details>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-close-modal="adminAuthModal">Listo</button>
-      </div>
-    </div>
-  </div>
-
   <!-- BINGO CELEBRATION TOAST / BANNER -->
   <div id="bingoToast" class="bingo-toast hidden" role="status" aria-live="assertive">
     <div class="bingo-toast-inner">
@@ -455,7 +346,6 @@
     </div>
   </div>
 
-  <script src="firebase-service.js"></script>
   <script src="app.js"></script>
 </body>
 

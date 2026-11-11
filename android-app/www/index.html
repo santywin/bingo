@@ -131,60 +131,66 @@
     </button>
   </nav>
 
-  <!-- MODAL 1: Selector y Creador de Patrones -->
+  <!-- MODAL 1: Selector y Creador de Patrones (Adaptado a Móvil) -->
   <div id="patternModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
     aria-labelledby="patternModalTitle">
-    <div class="modal-content modal-lg">
+    <div class="modal-content modal-lg mobile-pattern-modal">
       <div class="modal-header">
         <div>
-          <h2 id="patternModalTitle">🎯 Seleccionar o Crear Patrones</h2>
-          <p class="modal-subtitle">Toca cualquier patrón para marcarlo (✓) o desmarcarlo.</p>
+          <h2 id="patternModalTitle">🎯 Patrones de Juego</h2>
+          <p class="modal-subtitle">Toca un patrón para activarlo (✓) o dibuja el tuyo abajo.</p>
         </div>
         <button class="btn-close" data-close-modal="patternModal" aria-label="Cerrar">&times;</button>
       </div>
 
-      <div class="modal-body pattern-modal-grid">
+      <div class="modal-body pattern-modal-layout mobile-pattern-body">
+        <!-- Lista de patrones predefinidos y guardados -->
         <div class="preset-patterns-column">
-          <div class="preset-header-row">
-            <h3>Patrones (<span id="modalSelectedPatternsCount">1</span> activos)</h3>
-            <div class="preset-quick-btns">
-              <button type="button" id="btnSelectOnlyFirstPattern" class="btn btn-xs btn-ghost">Dejar solo 1</button>
+          <div class="patterns-column-header">
+            <h3>Activos (<span id="modalSelectedPatternsCount">1</span>)</h3>
+            <div class="patterns-bulk-actions">
+              <button type="button" id="btnSelectOnlyFirstPattern" class="btn btn-xs btn-ghost">Dejar 1</button>
               <button type="button" id="btnSelectAllPatterns" class="btn btn-xs btn-ghost">Todos</button>
             </div>
           </div>
 
-          <div id="selectedPatternsChipsBar" class="selected-patterns-chips-bar"></div>
-          <input type="search" id="patternSearchInput" class="search-input" placeholder="🔍 Buscar patrón..." />
-          <div id="presetPatternsList" class="preset-patterns-list"></div>
+          <div id="selectedPatternsChipsBar" class="selected-patterns-chips"></div>
+          <div class="pattern-search-bar">
+            <input type="search" id="patternSearchInput" placeholder="🔍 Buscar patrón (Línea, X, Lleno...)" />
+          </div>
+          <div id="presetPatternsList" class="patterns-grid-selector mobile-patterns-grid"></div>
         </div>
 
-        <div class="custom-pattern-column">
-          <h3>✨ Crear Patrón Personalizado (5×5)</h3>
-          <p class="hint-text">Toca las casillas para dibujar tu figura:</p>
+        <!-- Creador compacto 5x5 para teléfono -->
+        <div class="pattern-editor-column mobile-pattern-editor">
+          <h3>✨ Crear Patrón (5×5)</h3>
+          <p class="editor-instructions">Toca las casillas de la cuadrícula para armar tu figura:</p>
 
-          <div class="custom-editor-wrapper">
-            <div class="editor-bingo-header">
-              <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
-            </div>
-            <div id="customPatternEditorGrid" class="custom-editor-grid"></div>
-          </div>
-
-          <div class="custom-editor-tools">
-            <button type="button" id="btnEditorClear" class="btn btn-sm btn-ghost">Vaciar</button>
-            <button type="button" id="btnEditorFill" class="btn btn-sm btn-ghost">Llenar</button>
-            <button type="button" id="btnEditorInvert" class="btn btn-sm btn-ghost">Invertir</button>
-            <button type="button" id="btnEditorRotate" class="btn btn-sm btn-ghost">🔄 Rotar 90°</button>
-          </div>
-
-          <div class="custom-save-form">
+          <div class="custom-editor-form">
             <label class="form-label">
               Nombre del Patrón
               <input type="text" id="customPatternName" placeholder="Ej: Letra Z, Cruz..." maxlength="32" />
             </label>
-            <label class="checkbox-label">
+
+            <div class="mobile-editor-board-box">
+              <div class="editor-bingo-header">
+                <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+              </div>
+              <div id="customPatternEditorGrid" class="editor-grid-5x5"></div>
+            </div>
+
+            <div class="editor-quick-tools">
+              <button type="button" id="btnEditorClear" class="btn btn-xs btn-ghost">Vaciar</button>
+              <button type="button" id="btnEditorFill" class="btn btn-xs btn-ghost">Llenar</button>
+              <button type="button" id="btnEditorInvert" class="btn btn-xs btn-ghost">Invertir</button>
+              <button type="button" id="btnEditorRotate" class="btn btn-xs btn-ghost">🔄 Rotar 90°</button>
+            </div>
+
+            <label class="checkbox-row">
               <input type="checkbox" id="customPatternIncludeRotations" />
-              <span>Permitir también las 4 rotaciones (0°, 90°, 180°, 270°)</span>
+              <span>Permitir las 4 rotaciones (0°, 90°, 180°, 270°)</span>
             </label>
+
             <button type="button" id="btnSaveCustomPattern" class="btn btn-primary btn-block">
               💾 Guardar y Usar Patrón
             </button>
