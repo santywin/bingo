@@ -1466,10 +1466,8 @@
     document.getElementById('bingoToast').classList.add('hidden');
   }
 
-  function openBackupModal() {
-    const modal = document.getElementById('backupModal');
-    const textarea = document.getElementById('backupJsonTextarea');
-    textarea.value = JSON.stringify(
+  function buildBackupJsonString() {
+    return JSON.stringify(
       {
         cards: state.cards,
         customPatterns: state.customPatterns,
@@ -1479,6 +1477,197 @@
       null,
       2
     );
+  }
+
+  function buildCompactShareCode() {
+    const compactPayload = {
+      c: state.cards.map((card) => ({
+        n: card.name,
+        cl: card.color,
+        v: card.numbers,
+      })),
+      cp: state.customPatterns,
+      ap: state.activePatternIds,
+    };
+    const jsonStr = JSON.stringify(compactPayload);
+    const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    return `SANTY-BINGO:${b64}`;
+  }
+
+  function buildWhatsAppShareMessage() {
+    const code = buildCompactShareCode();
+    const count = state.cards.length;
+    return (
+      `🎲 *Mis Tablas de SantyWin Bingo (${count} ${count === 1 ? 'cartón' : 'cartones'})*\n` +
+      `Copia todo este mensaje y en la app ve a *💾 Respaldo -> Pegar y Cargar*:\n\n` +
+      `${code}`
+    );
+  }
+
+  function parseBackupPayload(rawText) {
+    if (!rawText || typeof rawText !== 'string') return null;
+    const trimmed = rawText.trim();
+    if (!trimmed) return null;
+
+    // 1. Detectar código compacto SANTY-BINGO:<base64> (incluso dentro de un mensaje de WhatsApp)
+    const codeMatch = trimmed.match(/SANTY-BINGO:([A-Za-z0-9+/=_-]+)/);
+    if (codeMatch && codeMatch[1]) {
+      try {
+        const cleanB64 = codeMatch[1].replace(/-/g, '+').replace(/_/g, '/');
+        const decodedStr = decodeURIComponent(escape(atob(cleanB64)));
+        const parsed = JSON.parse(decodedStr);
+        if (parsed && Array.isArray(parsed.c)) {
+          return {
+            cards: parsed.c.map((item, i) => ({
+              name: item.n || `Cartón #${i + 1}`,
+              color: item.cl || 'blue',
+              numbers: Array.isArray(item.v) ? item.v : [],
+            })),
+            customPatterns: Array.isArray(parsed.cp) ? parsed.cp : [],
+            activePatternIds: Array.isArray(parsed.ap) ? parsed.ap : [],
+          };
+        }
+        if (parsed && Array.isArray(parsed.cards)) {
+          return parsed;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Detectar JSON estándar (o extraer el bloque {...} si viene con texto alrededor)
+    try {
+      const direct = JSON.parse(trimmed);
+      if (direct && (Array.isArray(direct.cards) || Array.isArray(direct.c))) {
+        if (Array.isArray(direct.c) && !Array.isArray(direct.cards)) {
+          direct.cards = direct.c.map((item, i) => ({
+            name: item.n || `Cartón #${i + 1}`,
+            color: item.cl || 'blue',
+            numbers: Array.isArray(item.v) ? item.v : [],
+          }));
+        }
+        return direct;
+      }
+    } catch (_) {
+      const firstBrace = trimmed.indexOf('{');
+      const lastBrace = trimmed.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          const extracted = JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+          if (extracted && Array.isArray(extracted.cards)) {
+            return extracted;
+          }
+        } catch (_) {}
+      }
+    }
+
+    return null;
+  }
+
+  function showBackupStatus(msg) {
+    const statusBox = document.getElementById('backupShareStatus');
+    if (!statusBox) return;
+    statusBox.textContent = msg;
+    statusBox.classList.remove('hidden');
+    setTimeout(() => {
+      statusBox.classList.add('hidden');
+    }, 4500);
+  }
+
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(temp);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applyImportedBackup(data, replaceExisting = false) {
+    if (!data || !Array.isArray(data.cards)) {
+      alert('No se encontraron tablas válidas en el respaldo. Asegúrate de pegar el mensaje o código completo.');
+      return false;
+    }
+
+    const validCards = [];
+    data.cards.forEach((c, idx) => {
+      if (c && Array.isArray(c.numbers) && c.numbers.length === 25) {
+        validCards.push({
+          id: 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '_' + idx,
+          name: c.name || `Cartón #${(replaceExisting ? 0 : state.cards.length) + validCards.length + 1}`,
+          color: c.color || CARD_COLORS[((replaceExisting ? 0 : state.cards.length) + validCards.length) % CARD_COLORS.length],
+          numbers: c.numbers.slice(0, 25).map((n) => parseInt(n, 10) || 0),
+          createdAt: Date.now() + idx,
+        });
+      }
+    });
+
+    if (validCards.length === 0) {
+      alert('El respaldo no contiene cartones válidos de 25 casillas.');
+      return false;
+    }
+
+    if (replaceExisting) {
+      state.cards = validCards;
+    } else {
+      state.cards.push(...validCards);
+    }
+
+    if (validCards.some((c) => c.numbers.some((n) => n > 75))) {
+      state.show99Balls = true;
+    }
+
+    if (Array.isArray(data.customPatterns)) {
+      const existingNames = new Set(state.customPatterns.map((p) => p.name));
+      data.customPatterns.forEach((p, idx) => {
+        if (p && Array.isArray(p.masks)) {
+          const newId = 'custom_' + Date.now() + '_' + idx;
+          state.customPatterns.push({
+            ...p,
+            id: newId,
+            name: existingNames.has(p.name) ? `${p.name} (Importado)` : p.name,
+            isCustom: true,
+          });
+        }
+      });
+    }
+
+    saveState();
+    syncPreviousWinnerSets();
+    document.getElementById('backupModal').classList.add('hidden');
+    renderAll(null);
+
+    alert(
+      replaceExisting
+        ? `✅ ¡Listo! Se cargaron ${validCards.length} tabla(s) reemplazando las anteriores.`
+        : `✅ ¡Listo! Se sumaron ${validCards.length} tabla(s) a tu juego (Total: ${state.cards.length}).`
+    );
+    return true;
+  }
+
+  function openBackupModal() {
+    const modal = document.getElementById('backupModal');
+    const textarea = document.getElementById('backupJsonTextarea');
+    const countBadge = document.getElementById('backupCurrentCardsCount');
+    const statusBox = document.getElementById('backupShareStatus');
+    if (countBadge) countBadge.textContent = state.cards.length;
+    if (statusBox) statusBox.classList.add('hidden');
+    if (textarea) {
+      textarea.value = '';
+      textarea.placeholder = 'Pega aquí el mensaje o código SANTY-BINGO:... que te enviaron por WhatsApp';
+    }
     modal.classList.remove('hidden');
   }
 
@@ -2215,31 +2404,166 @@
       renderAll(null);
     });
 
-    // Modal de respaldo: Descargar archivo JSON e Importar archivo agregando cartones
+    // Modal de respaldo: Compartir por WhatsApp, Copiar código, Compartir nativo e Importar
     document.getElementById('btnExportImport').addEventListener('click', openBackupModal);
 
-    document.getElementById('btnDownloadBackup').addEventListener('click', () => {
-      const jsonContent = JSON.stringify(
-        {
-          cards: state.cards,
-          customPatterns: state.customPatterns,
-          activePatternIds: state.activePatternIds,
-          calledNumbers: state.calledNumbers,
-        },
-        null,
-        2
-      );
-      const blob = new Blob([jsonContent], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+    const btnShareWhatsApp = document.getElementById('btnShareWhatsApp');
+    if (btnShareWhatsApp) {
+      btnShareWhatsApp.addEventListener('click', async () => {
+        const msg = buildWhatsAppShareMessage();
+        await copyTextToClipboard(msg);
+        showBackupStatus('✅ Código copiado y abriendo WhatsApp...');
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, '_blank');
+      });
+    }
+
+    const btnCopyBackupCode = document.getElementById('btnCopyBackupCode');
+    if (btnCopyBackupCode) {
+      btnCopyBackupCode.addEventListener('click', async () => {
+        const msg = buildWhatsAppShareMessage();
+        const ok = await copyTextToClipboard(msg);
+        const textarea = document.getElementById('backupJsonTextarea');
+        if (textarea) textarea.value = msg;
+        if (ok) {
+          showBackupStatus('✅ ¡Copiado al portapapeles! Pégalo en WhatsApp o cualquier chat.');
+        } else {
+          showBackupStatus('📋 Código generado abajo: mantenlo presionado y toca Copiar.');
+        }
+      });
+    }
+
+    const btnShareNative = document.getElementById('btnShareNative');
+    if (btnShareNative) {
+      btnShareNative.addEventListener('click', async () => {
+        const jsonContent = buildBackupJsonString();
+        const msg = buildWhatsAppShareMessage();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const fileName = `santywin-bingo-${dateStr}.json`;
+
+        if (navigator.share) {
+          try {
+            const file = new File([jsonContent], fileName, { type: 'application/json' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: 'Mis Tablas de SantyWin Bingo',
+                text: msg,
+                files: [file],
+              });
+              return;
+            }
+          } catch (_) {}
+
+          try {
+            await navigator.share({
+              title: 'Mis Tablas de SantyWin Bingo',
+              text: msg,
+            });
+            return;
+          } catch (_) {}
+        }
+
+        await copyTextToClipboard(msg);
+        showBackupStatus('✅ ¡Código copiado al portapapeles listo para compartir!');
+      });
+    }
+
+    document.getElementById('btnDownloadBackup').addEventListener('click', async () => {
+      const jsonContent = buildBackupJsonString();
       const dateStr = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `santywin-bingo-respaldo-${dateStr}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const fileName = `santywin-bingo-respaldo-${dateStr}.json`;
+
+      // En Android, intentar compartir el archivo .json nativamente primero
+      if (navigator.share && navigator.canShare) {
+        try {
+          const file = new File([jsonContent], fileName, { type: 'application/json' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: fileName,
+              files: [file],
+            });
+            return;
+          }
+        } catch (_) {}
+      }
+
+      try {
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+
+      await copyTextToClipboard(jsonContent);
+      const textarea = document.getElementById('backupJsonTextarea');
+      if (textarea) textarea.value = jsonContent;
+      showBackupStatus('✅ JSON copiado al portapapeles y mostrado abajo.');
     });
+
+    const btnPasteFromClipboard = document.getElementById('btnPasteFromClipboard');
+    if (btnPasteFromClipboard) {
+      btnPasteFromClipboard.addEventListener('click', async () => {
+        const textarea = document.getElementById('backupJsonTextarea');
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const clipText = await navigator.clipboard.readText();
+            if (clipText && clipText.trim()) {
+              textarea.value = clipText.trim();
+              showBackupStatus('✅ Texto pegado. Ahora toca "Cargar y Reemplazar" o "Cargar y Sumar".');
+              return;
+            }
+          }
+        } catch (_) {}
+        if (textarea) {
+          textarea.focus();
+          alert('Mantén presionado dentro del cuadro de texto y toca "Pegar".');
+        }
+      });
+    }
+
+    const handleLoadFromTextarea = async (replaceExisting) => {
+      const textarea = document.getElementById('backupJsonTextarea');
+      let rawText = textarea ? textarea.value.trim() : '';
+
+      if (!rawText && navigator.clipboard && navigator.clipboard.readText) {
+        try {
+          const clip = await navigator.clipboard.readText();
+          if (clip && clip.trim()) {
+            rawText = clip.trim();
+            if (textarea) textarea.value = rawText;
+          }
+        } catch (_) {}
+      }
+
+      if (!rawText) {
+        alert('Primero pega en el cuadro de texto el mensaje o código que te compartieron por WhatsApp.');
+        if (textarea) textarea.focus();
+        return;
+      }
+
+      const parsed = parseBackupPayload(rawText);
+      if (!parsed) {
+        alert('El texto pegado no contiene un respaldo válido de SantyWin Bingo. Asegúrate de copiar el mensaje completo.');
+        return;
+      }
+
+      applyImportedBackup(parsed, replaceExisting);
+    };
+
+    const btnLoadBackupReplace = document.getElementById('btnLoadBackupReplace');
+    if (btnLoadBackupReplace) {
+      btnLoadBackupReplace.addEventListener('click', () => handleLoadFromTextarea(true));
+    }
+
+    const btnLoadBackupAppend = document.getElementById('btnLoadBackupAppend');
+    if (btnLoadBackupAppend) {
+      btnLoadBackupAppend.addEventListener('click', () => handleLoadFromTextarea(false));
+    }
 
     const fileInput = document.getElementById('backupFileInput');
     document.getElementById('btnImportBackup').addEventListener('click', () => {
@@ -2253,51 +2577,17 @@
 
       const reader = new FileReader();
       reader.onload = (ev) => {
-        try {
-          const data = JSON.parse(ev.target.result);
-          let addedCardsCount = 0;
-
-          if (Array.isArray(data.cards)) {
-            data.cards.forEach((c, idx) => {
-              if (c && Array.isArray(c.numbers) && c.numbers.length === 25) {
-                state.cards.push({
-                  id: 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '_' + idx,
-                  name: c.name || `Cartón #${state.cards.length + 1}`,
-                  color: c.color || CARD_COLORS[state.cards.length % CARD_COLORS.length],
-                  numbers: c.numbers.slice(0, 25),
-                  createdAt: Date.now() + idx,
-                });
-                if (c.numbers.some((n) => n > 75)) {
-                  state.show99Balls = true;
-                }
-                addedCardsCount++;
-              }
-            });
-          }
-
-          if (Array.isArray(data.customPatterns)) {
-            const existingNames = new Set(state.customPatterns.map((p) => p.name));
-            data.customPatterns.forEach((p, idx) => {
-              if (p && Array.isArray(p.masks)) {
-                const newId = 'custom_' + Date.now() + '_' + idx;
-                state.customPatterns.push({
-                  ...p,
-                  id: newId,
-                  name: existingNames.has(p.name) ? `${p.name} (Importado)` : p.name,
-                  isCustom: true,
-                });
-              }
-            });
-          }
-
-          saveState();
-          syncPreviousWinnerSets();
-          document.getElementById('backupModal').classList.add('hidden');
-          renderAll(null);
-          alert(`Se agregaron ${addedCardsCount} cartón(es) a tu lista actual.`);
-        } catch (_) {
-          alert('El archivo seleccionado no es un archivo JSON de respaldo válido.');
+        const parsed = parseBackupPayload(ev.target.result);
+        if (!parsed) {
+          alert('El archivo seleccionado no es un respaldo válido de SantyWin Bingo.');
+          return;
         }
+        const replace = confirm(
+          `El archivo contiene ${parsed.cards.length} tabla(s).\n\n` +
+          `¿Quieres REEMPLAZAR tus tablas actuales por estas?\n` +
+          `(Aceptar = Reemplazar mis tablas | Cancelar = Sumarlas a las que ya tengo)`
+        );
+        applyImportedBackup(parsed, replace);
       };
       reader.readAsText(file);
     });

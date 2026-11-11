@@ -300,24 +300,68 @@
     </div>
   </div>
 
-  <!-- MODAL 3: Respaldo -->
+  <!-- MODAL 3: Respaldo y Compartir Tablas -->
   <div id="backupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
     aria-labelledby="backupModalTitle">
     <div class="modal-content">
       <div class="modal-header">
         <div>
-          <h2 id="backupModalTitle">💾 Respaldo de Cartones</h2>
-          <p class="modal-subtitle">Descarga tus cartones o importa un archivo JSON para sumarlos.</p>
+          <h2 id="backupModalTitle">💾 Compartir y Cargar Tablas</h2>
+          <p class="modal-subtitle">Envía tus tablas por WhatsApp o carga las que te compartieron.</p>
         </div>
         <button class="btn-close" data-close-modal="backupModal" aria-label="Cerrar">&times;</button>
       </div>
-      <div class="modal-body">
-        <input type="file" id="backupFileInput" accept=".json,application/json" class="hidden" />
-        <textarea id="backupJsonTextarea" rows="6" class="backup-textarea" readonly></textarea>
-        <div class="backup-actions">
-          <button type="button" id="btnDownloadBackup" class="btn btn-secondary">⬇️ Descargar (.json)</button>
-          <button type="button" id="btnImportBackup" class="btn btn-primary">📂 Importar (Agregar)</button>
-          <button type="button" id="btnDeleteAllCards" class="btn btn-danger-outline">🗑️ Borrar Todos</button>
+      <div class="modal-body backup-modal-body">
+        <input type="file" id="backupFileInput" accept=".json,application/json,text/plain" class="hidden" />
+
+        <!-- SECCIÓN 1: COMPARTIR / EXPORTAR -->
+        <div class="backup-section-box">
+          <div class="backup-section-header">
+            <span class="backup-section-title">📤 1. Enviar mis tablas (<span id="backupCurrentCardsCount">0</span> cartones)</span>
+          </div>
+          <p class="backup-hint">Comparte tus tablas actuales para que otra persona las cargue en su teléfono:</p>
+          <div class="backup-share-grid">
+            <button type="button" id="btnShareWhatsApp" class="btn btn-whatsapp">
+              💬 Enviar por WhatsApp
+            </button>
+            <button type="button" id="btnCopyBackupCode" class="btn btn-primary">
+              📋 Copiar Código
+            </button>
+            <button type="button" id="btnShareNative" class="btn btn-secondary">
+              📲 Compartir / Archivo
+            </button>
+            <button type="button" id="btnDownloadBackup" class="btn btn-ghost">
+              ⬇️ Descargar .json
+            </button>
+          </div>
+          <div id="backupShareStatus" class="backup-status-msg hidden"></div>
+        </div>
+
+        <!-- SECCIÓN 2: CARGAR / IMPORTAR -->
+        <div class="backup-section-box">
+          <div class="backup-section-header">
+            <span class="backup-section-title">📥 2. Cargar tablas que me compartieron</span>
+            <button type="button" id="btnPasteFromClipboard" class="btn btn-xs btn-secondary">
+              📋 Pegar texto
+            </button>
+          </div>
+          <p class="backup-hint">Pega aquí el mensaje/código que te enviaron por WhatsApp o selecciona un archivo <code>.json</code>:</p>
+          <textarea id="backupJsonTextarea" rows="4" class="backup-textarea"
+            placeholder="Pega aquí el código o mensaje de respaldo que te enviaron..."></textarea>
+          <div class="backup-import-grid">
+            <button type="button" id="btnLoadBackupReplace" class="btn btn-primary">
+              🔄 Cargar y Reemplazar mis tablas
+            </button>
+            <button type="button" id="btnLoadBackupAppend" class="btn btn-secondary">
+              ➕ Cargar y Sumar a mis tablas
+            </button>
+            <button type="button" id="btnImportBackup" class="btn btn-ghost">
+              📂 Abrir Archivo (.json)
+            </button>
+            <button type="button" id="btnDeleteAllCards" class="btn btn-danger-outline">
+              🗑️ Borrar Todas mis tablas
+            </button>
+          </div>
         </div>
       </div>
     </div>
