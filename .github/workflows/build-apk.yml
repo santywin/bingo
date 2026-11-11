@@ -3,6 +3,8 @@ name: Build SantyWin Bingo Android APK
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "SantyWin-Bingo.apk"
   workflow_dispatch:
 
 permissions:
@@ -11,13 +13,12 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android-app
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -30,35 +31,37 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Capacitor & Generate Android Native Project
+      - name: Install Capacitor & Build Android APK
+        working-directory: android-app
         run: |
           npm install
           npx cap add android
           npx cap sync android
-
-      - name: Build Android APK (Debug Installable)
-        run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk ../SantyWin-Bingo.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../../SantyWin-Bingo.apk
+
+      - name: Commit SantyWin-Bingo.apk to repository root
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add SantyWin-Bingo.apk
+          git diff --staged --quiet || (git commit -m "build(android): add compiled SantyWin-Bingo.apk" && git push origin HEAD:main)
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SantyWin-Bingo-APK
-          path: android-app/SantyWin-Bingo.apk
+          path: SantyWin-Bingo.apk
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0-apk
-          name: "📱 SantyWin Bingo para Android (APK Instalable)"
+          name: "📱 SantyWin Bingo para Android (SantyWin-Bingo.apk)"
           body: |
-            Descarga directa del archivo **`SantyWin-Bingo.apk`** optimizado para teléfonos Android (con pantalla siempre activa, vibración háptica, vista de 2 cartones por fila, marcado rápido al alcance del pulgar y sincronización con Firebase `santywin-bingo-2026`).
-          files: android-app/SantyWin-Bingo.apk
+            Descarga directa del instalador **`SantyWin-Bingo.apk`** para teléfonos Android.
+          files: SantyWin-Bingo.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
