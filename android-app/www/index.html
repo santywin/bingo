@@ -8,37 +8,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <title>SantyWin Bingo — Edición Móvil Android</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body class="android-mobile-edition">
-  <!-- PANTALLA DE BLOQUEO Y ACCESO RESTRINGIDO POR CORREO GOOGLE -->
-  <div id="authLockScreen" class="auth-lock-screen">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <span>SW</span><span>75</span>
-      </div>
-      <h2>SantyWin <span class="badge-clean">ANDROID</span></h2>
-      <p class="auth-subtitle">Ingresa tu correo Google autorizado y tu PIN (sincronizado con Firebase).</p>
-
-      <!-- Formulario directo de ingreso con correo Gmail autorizado + PIN -->
-      <form id="emailPinLoginForm" class="auth-form" autocomplete="on">
-        <label class="form-label">
-          Correo Google (@gmail.com)
-          <input type="email" id="loginEmailInput" placeholder="santywin@gmail.com" required />
-        </label>
-        <label class="form-label">
-          Clave / PIN de Acceso
-          <input type="password" id="loginPinInput" placeholder="Ingresa tu PIN asignado" required />
-        </label>
-        <div id="loginErrorMsg" class="validation-error hidden"></div>
-        <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
-          🔐 Entrar a SantyWin Bingo
-        </button>
-      </form>
-    </div>
-  </div>
-
   <!-- Compact Mobile Top Header -->
   <header class="app-header mobile-header">
     <div class="brand">
@@ -47,11 +19,6 @@
       </div>
       <div>
         <h1>SantyWin <span class="badge-clean">APP</span></h1>
-        <div id="userSessionBar" class="user-session-bar hidden">
-          <span id="currentUserEmailBadge" class="user-email-badge"></span>
-          <button id="btnOpenAdminModal" type="button" class="btn btn-xs btn-secondary hidden">👑 Accesos</button>
-          <button id="btnLogout" type="button" class="btn btn-xs btn-ghost">🚪</button>
-        </div>
       </div>
     </div>
 
@@ -355,55 +322,6 @@
     </div>
   </div>
 
-  <!-- MODAL 4: Admin Panel -->
-  <div id="adminAuthModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
-    aria-labelledby="adminModalTitle">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
-        <div>
-          <h2 id="adminModalTitle">👑 Correos Google Autorizados</h2>
-          <p class="modal-subtitle">Sincronizado en tiempo real con Firebase Cloud Firestore.</p>
-        </div>
-        <button class="btn-close" data-close-modal="adminAuthModal" aria-label="Cerrar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="addAuthorizedUserForm" class="admin-add-user-form" autocomplete="off">
-          <label class="form-label flex-1">
-            Correo Google (@gmail.com)
-            <input type="email" id="newAuthEmailInput" placeholder="ejemplo@gmail.com" required />
-          </label>
-          <label class="form-label">
-            Nombre
-            <input type="text" id="newAuthNameInput" placeholder="Ej: Carlos" maxlength="30" />
-          </label>
-          <label class="form-label">
-            PIN
-            <input type="text" id="newAuthPinInput" placeholder="Ej: 1234" required maxlength="20" />
-          </label>
-          <button type="submit" class="btn btn-primary">➕ Autorizar</button>
-        </form>
-
-        <div class="admin-users-list-wrapper">
-          <h3>Correos con Acceso (<span id="authorizedUsersCount">1</span>)</h3>
-          <div id="authorizedUsersList" class="admin-users-list"></div>
-        </div>
-
-        <details class="admin-oauth-details">
-          <summary>🔥 Conectado a Firebase (santywin-bingo-2026)</summary>
-          <div class="admin-oauth-box">
-            <div class="admin-oauth-row">
-              <input type="text" id="adminGoogleClientIdInput" placeholder="Client ID opcional" />
-              <button type="button" id="btnSaveGoogleClientId" class="btn btn-sm btn-secondary">Guardar</button>
-            </div>
-          </div>
-        </details>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-close-modal="adminAuthModal">Listo</button>
-      </div>
-    </div>
-  </div>
-
   <!-- BINGO CELEBRATION TOAST -->
   <div id="bingoToast" class="bingo-toast hidden" role="status" aria-live="assertive">
     <div class="bingo-toast-inner">
@@ -417,7 +335,6 @@
     </div>
   </div>
 
-  <script src="firebase-service.js"></script>
   <script src="app.js"></script>
 </body>
 
