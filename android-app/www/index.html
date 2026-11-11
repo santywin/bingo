@@ -305,24 +305,21 @@
       <div class="modal-body backup-modal-body">
         <input type="file" id="backupFileInput" accept=".json,application/json,text/plain" class="hidden" />
 
-        <!-- SECCIÓN 1: COMPARTIR / EXPORTAR -->
+        <!-- SECCIÓN 1: COMPARTIR / EXPORTAR POR WHATSAPP -->
         <div class="backup-section-box">
           <div class="backup-section-header">
-            <span class="backup-section-title">📤 1. Enviar mis tablas (<span id="backupCurrentCardsCount">0</span> cartones)</span>
+            <span class="backup-section-title">📤 1. Compartir mis tablas (<span id="backupCurrentCardsCount">0</span> cartones)</span>
           </div>
-          <p class="backup-hint">Comparte tus tablas actuales para que otra persona las cargue en su teléfono:</p>
+          <p class="backup-hint">Envía tus tablas por WhatsApp para que otra persona las cargue en su teléfono:</p>
+          <button type="button" id="btnShareWhatsApp" class="btn btn-whatsapp btn-block">
+            💬 Compartir para enviar por WhatsApp
+          </button>
           <div class="backup-share-grid">
-            <button type="button" id="btnShareWhatsApp" class="btn btn-whatsapp">
-              💬 Enviar por WhatsApp
+            <button type="button" id="btnShareNative" class="btn btn-secondary">
+              📎 Compartir Archivo (.json)
             </button>
             <button type="button" id="btnCopyBackupCode" class="btn btn-primary">
               📋 Copiar Código
-            </button>
-            <button type="button" id="btnShareNative" class="btn btn-secondary">
-              📲 Compartir / Archivo
-            </button>
-            <button type="button" id="btnDownloadBackup" class="btn btn-ghost">
-              ⬇️ Descargar .json
             </button>
           </div>
           <div id="backupShareStatus" class="backup-status-msg hidden"></div>

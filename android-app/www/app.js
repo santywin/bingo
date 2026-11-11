@@ -2353,9 +2353,34 @@
       btnShareWhatsApp.addEventListener('click', async () => {
         const msg = buildWhatsAppShareMessage();
         await copyTextToClipboard(msg);
-        showBackupStatus('✅ Código copiado y abriendo WhatsApp...');
-        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-        window.open(waUrl, '_blank');
+        showBackupStatus('✅ Código copiado. Selecciona el contacto en WhatsApp...');
+
+        // 1. Intentar abrir el menú nativo de compartir de Android (Capacitor Share Plugin)
+        const capPlugins = window.Capacitor && window.Capacitor.Plugins;
+        if (capPlugins && capPlugins.Share) {
+          try {
+            await capPlugins.Share.share({
+              title: 'Mis Tablas de SantyWin Bingo',
+              text: msg,
+              dialogTitle: 'Compartir mis tablas por WhatsApp',
+            });
+            return;
+          } catch (_) {}
+        }
+
+        // 2. Intentar Web Share API si existe
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: 'Mis Tablas de SantyWin Bingo',
+              text: msg,
+            });
+            return;
+          } catch (_) {}
+        }
+
+        // 3. Abrir esquema directo de WhatsApp
+        window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`;
       });
     }
 
@@ -2382,6 +2407,38 @@
         const dateStr = new Date().toISOString().slice(0, 10);
         const fileName = `santywin-bingo-${dateStr}.json`;
 
+        // 1. En Android APK (Capacitor Filesystem + Share), crear el archivo .json y compartirlo por WhatsApp
+        const capPlugins = window.Capacitor && window.Capacitor.Plugins;
+        if (capPlugins && capPlugins.Filesystem && capPlugins.Share) {
+          try {
+            const savedFile = await capPlugins.Filesystem.writeFile({
+              path: fileName,
+              data: jsonContent,
+              directory: 'CACHE',
+              encoding: 'utf8',
+            });
+            if (savedFile && savedFile.uri) {
+              await capPlugins.Share.share({
+                title: fileName,
+                text: '🎲 Te comparto mis tablas de SantyWin Bingo',
+                url: savedFile.uri,
+                dialogTitle: 'Enviar archivo .json por WhatsApp',
+              });
+              return;
+            }
+          } catch (_) {}
+
+          try {
+            await capPlugins.Share.share({
+              title: 'Mis Tablas de SantyWin Bingo',
+              text: msg,
+              dialogTitle: 'Compartir mis tablas por WhatsApp',
+            });
+            return;
+          } catch (_) {}
+        }
+
+        // 2. Web Share API con archivo o texto
         if (navigator.share) {
           try {
             const file = new File([jsonContent], fileName, { type: 'application/json' });
@@ -2405,46 +2462,18 @@
         }
 
         await copyTextToClipboard(msg);
-        showBackupStatus('✅ ¡Código copiado al portapapeles listo para compartir!');
+        showBackupStatus('✅ ¡Código copiado al portapapeles listo para pegar en WhatsApp!');
       });
     }
 
-    document.getElementById('btnDownloadBackup').addEventListener('click', async () => {
-      const jsonContent = buildBackupJsonString();
-      const dateStr = new Date().toISOString().slice(0, 10);
-      const fileName = `santywin-bingo-respaldo-${dateStr}.json`;
-
-      // En Android, intentar compartir el archivo .json nativamente primero
-      if (navigator.share && navigator.canShare) {
-        try {
-          const file = new File([jsonContent], fileName, { type: 'application/json' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: fileName,
-              files: [file],
-            });
-            return;
-          }
-        } catch (_) {}
-      }
-
-      try {
-        const blob = new Blob([jsonContent], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch (_) {}
-
-      await copyTextToClipboard(jsonContent);
-      const textarea = document.getElementById('backupJsonTextarea');
-      if (textarea) textarea.value = jsonContent;
-      showBackupStatus('✅ JSON copiado al portapapeles y mostrado abajo.');
-    });
+    const btnDownloadBackup = document.getElementById('btnDownloadBackup');
+    if (btnDownloadBackup) {
+      btnDownloadBackup.addEventListener('click', async () => {
+        const msg = buildWhatsAppShareMessage();
+        await copyTextToClipboard(msg);
+        showBackupStatus('✅ Copiado al portapapeles.');
+      });
+    }
 
     const btnPasteFromClipboard = document.getElementById('btnPasteFromClipboard');
     if (btnPasteFromClipboard) {
