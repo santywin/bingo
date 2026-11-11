@@ -753,93 +753,28 @@
     const btnUndo = document.getElementById('btnUndoLast');
     if (btnUndo) btnUndo.disabled = state.calledNumbers.length === 0;
 
-    const hasNumbersOver75 =
-      state.calledNumbers.some((n) => n > 75) ||
-      state.cards.some((c) => c.numbers.some((n) => n > 75));
-    const showExtended = state.show99Balls || hasNumbersOver75;
-
-    const callerPanel = document.getElementById('callerPanel');
-    const mainLayout = document.getElementById('mainLayout');
-    const btnToggleBoard = document.getElementById('btnToggleBoardNumbers');
-    const masterBoardEl = document.getElementById('masterBoard');
-
-    if (callerPanel) {
-      callerPanel.classList.toggle('minimized', !!state.boardMinimized);
-    }
-    if (mainLayout) {
-      mainLayout.classList.toggle('board-minimized', !!state.boardMinimized);
-    }
-    if (masterBoardEl) {
-      masterBoardEl.classList.toggle('hidden', !!state.boardMinimized);
-    }
-    if (btnToggleBoard) {
-      const totalBalls = showExtended ? 99 : 75;
-      btnToggleBoard.innerHTML = state.boardMinimized
-        ? `▼ Tablero (${state.calledNumbers.length}/${totalBalls})`
-        : `▲ Ocultar (${state.calledNumbers.length}/${totalBalls})`;
-    }
-
-    const btnToggle99 = document.getElementById('btnToggle99Balls');
-    if (btnToggle99) {
-      btnToggle99.textContent = showExtended ? '▲ 75' : '+ 76–99';
-    }
-
-    // Historial de últimas bolas
+    // Historial de últimas bolas (en móvil permite tocar una bola cantada para quitarla si te equivocaste)
     const recentContainer = document.getElementById('recentBallsList');
-    recentContainer.innerHTML = '';
-    if (state.calledNumbers.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'empty-history';
-      empty.textContent = 'Ninguna bola marcada aún';
-      recentContainer.appendChild(empty);
-    } else {
-      const lastBalls = state.calledNumbers.slice(-8).reverse();
-      lastBalls.forEach((num, idx) => {
-        const pill = document.createElement('span');
-        pill.className = 'recent-ball-pill' + (idx === 0 ? ' latest' : '');
-        pill.textContent = formatBallLabel(num);
-        recentContainer.appendChild(pill);
-      });
-    }
-
-    // Tablero por filas B I N G O (+ filas extendidas 76-99 si están activas)
-    const masterBoard = document.getElementById('masterBoard');
-    masterBoard.innerHTML = '';
-
-    const rowsToRender = [...COL_RANGES];
-    if (showExtended) {
-      rowsToRender.push(
-        { letter: '+1', cssClass: 'EXT', min: 76, max: 90 },
-        { letter: '+2', cssClass: 'EXT', min: 91, max: 99 }
-      );
-    }
-
-    rowsToRender.forEach(({ letter, cssClass, min, max }) => {
-      const row = document.createElement('div');
-      row.className = 'master-row';
-
-      const letterEl = document.createElement('div');
-      letterEl.className = `master-letter letter-${cssClass || letter}`;
-      letterEl.textContent = letter;
-      row.appendChild(letterEl);
-
-      for (let n = min; n <= max; n++) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'master-ball';
-        if (calledSet.has(n)) {
-          btn.classList.add('called');
-        } else if (globalNeededMap.has(n)) {
-          btn.classList.add('needed-for-bingo');
-          btn.title = `¡Bola ganadora! Te da BINGO al instante`;
-        }
-        btn.textContent = n;
-        btn.addEventListener('click', () => toggleBall(n));
-        row.appendChild(btn);
+    if (recentContainer) {
+      recentContainer.innerHTML = '';
+      if (state.calledNumbers.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'empty-history';
+        empty.textContent = 'Ninguna bola marcada aún';
+        recentContainer.appendChild(empty);
+      } else {
+        const lastBalls = state.calledNumbers.slice().reverse();
+        lastBalls.forEach((num, idx) => {
+          const pill = document.createElement('span');
+          pill.className = 'recent-ball-pill' + (idx === 0 ? ' latest' : '');
+          pill.textContent = formatBallLabel(num);
+          pill.title = `Toca para desmarcar ${formatBallLabel(num)}`;
+          pill.style.cursor = 'pointer';
+          pill.addEventListener('click', () => toggleBall(num));
+          recentContainer.appendChild(pill);
+        });
       }
-
-      masterBoard.appendChild(row);
-    });
+    }
   }
 
   function renderCardsToolbarCounts(allCount, bingoCount, oneAwayCount, twoAwayCount) {
@@ -2350,19 +2285,25 @@
     // Nueva ronda
     document.getElementById('btnResetRound').addEventListener('click', resetRound);
 
-    // Mostrar / ocultar bolas del 76 al 99 en el tablero
-    document.getElementById('btnToggle99Balls').addEventListener('click', () => {
-      state.show99Balls = !state.show99Balls;
-      saveState();
-      renderAll(null);
-    });
+    // Mostrar / ocultar bolas del 76 al 99 en el tablero (si existe en el DOM)
+    const btnToggle99Balls = document.getElementById('btnToggle99Balls');
+    if (btnToggle99Balls) {
+      btnToggle99Balls.addEventListener('click', () => {
+        state.show99Balls = !state.show99Balls;
+        saveState();
+        renderAll(null);
+      });
+    }
 
-    // Minimizar / mostrar la cuadrícula de números del tablero
-    document.getElementById('btnToggleBoardNumbers').addEventListener('click', () => {
-      state.boardMinimized = !state.boardMinimized;
-      saveState();
-      renderAll(null);
-    });
+    // Minimizar / mostrar la cuadrícula de números del tablero (si existe en el DOM)
+    const btnToggleBoardNumbers = document.getElementById('btnToggleBoardNumbers');
+    if (btnToggleBoardNumbers) {
+      btnToggleBoardNumbers.addEventListener('click', () => {
+        state.boardMinimized = !state.boardMinimized;
+        saveState();
+        renderAll(null);
+      });
+    }
 
     // Marcado rápido por teclado (input 1-999 + Enter)
     document.getElementById('quickDabForm').addEventListener('submit', (e) => {

@@ -86,32 +86,23 @@
     </div>
   </section>
 
-  <!-- Sticky Mobile Number Caller & Quick Dab Bar -->
+  <!-- Sticky Mobile Number Caller & Quick Dab Bar (Solo ingreso por teclado numérico) -->
   <section class="mobile-sticky-caller">
     <form id="quickDabForm" class="quick-dab-form mobile-quick-dab" autocomplete="off">
       <input type="number" id="quickNumberInput" inputmode="numeric" pattern="[0-9]*" min="1" max="999"
-        placeholder="# Bola (1-99)" aria-label="Ingresar número de bola" />
+        placeholder="Escribe # de bola (ej: 42)" aria-label="Ingresar número de bola" />
       <button type="submit" class="btn btn-primary btn-dab-submit">MARCAR</button>
       <button type="button" id="btnUndoLast" class="btn btn-ghost btn-undo-mobile" title="Deshacer última bola">
         ↩
-      </button>
-      <button type="button" id="btnToggleBoardNumbers" class="btn btn-secondary btn-board-toggle-mobile">
-        ▼ Tablero (<span id="calledCountBadge">0</span>/<span id="totalBallsBadge">75</span>)
       </button>
     </form>
 
     <!-- Horizontal Strip of Recent Called Balls -->
     <div class="recent-balls-bar mobile-recent-strip">
-      <span class="recent-label">Últimas:</span>
+      <span class="recent-label">Cantadas (<span id="calledCount">0</span>):</span>
       <div id="recentBallsList" class="recent-balls-list">
         <span class="empty-history">Ninguna marcada</span>
       </div>
-      <button type="button" id="btnToggle99Balls" class="btn btn-xs btn-ghost">+ 76–99</button>
-    </div>
-
-    <!-- Collapsible 1-75 / 99 Master Board -->
-    <div id="masterBoard" class="master-board hidden" role="group" aria-label="Tablero de números de Bingo">
-      <!-- Populated by JS -->
     </div>
   </section>
 
