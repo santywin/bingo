@@ -1,0 +1,291 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — SantyWin Bingo (santywin-bingo-2026)
+// ===============================================================
+//
+// This security rules file assumes the following data structures:
+//
+// Collection: allowed_users
+// Document ID: {emailId} (lowercase Google email address)
+// Fields:
+//   - email: string (required, 3..254 chars, valid email, immutable) - Authorized Google email
+//   - name: string (optional, 0..100 chars) - Display name of the authorized player
+//   - pin: string (optional, 0..50 chars) - Access PIN assigned by admin
+//   - role: string (required, enum: ['admin', 'user']) - User privilege role
+//   - active: bool (required) - Whether the user is currently allowed access
+//   - createdAt: int | timestamp (optional, immutable) - Creation timestamp
+//   - updatedAt: int | timestamp (optional) - Last modification timestamp
+//
+// Collection: config
+// Document ID: auth_store
+// Fields:
+//   - users: list (required, max 500 items) - Synchronized list of authorized user objects
+//   - googleClientId: string (optional, 0..300 chars) - Google Identity Services OAuth Client ID
+//   - adminEmail: string (optional, 0..254 chars) - Email of the administrator who last updated the store
+//   - updatedAt: int | timestamp (optional) - Last sync timestamp
+//
+// Collection: user_bingo_data
+// Document ID: {userId} (Firebase Auth UID or lowercase Google email)
+// Fields:
+//   - cards: list (required, max 500 items) - User's 5x5 bingo cards
+//   - calledNumbers: list (required, max 1000 items) - Chronological list of called ball numbers
+//   - activePatternIds: list (optional, max 100 items) - Active pattern IDs for verification
+//   - customPatterns: list (optional, max 200 items) - User-created 5x5 custom patterns
+//   - soundEnabled: bool (optional) - Audio synthesizer toggle state
+//   - patternsMinimized: bool (optional) - UI state for pattern bar
+//   - boardMinimized: bool (optional) - UI state for number board
+//   - show99Balls: bool (optional) - Whether balls 76..99 are visible
+//   - sortBy: string (optional, 0..30 chars) - Card sorting preference
+//   - email: string (optional, 0..254 chars, immutable) - Owner email address
+//   - uid: string (optional, 0..128 chars, immutable) - Owner Firebase Auth UID
+//   - createdAt: int | timestamp (optional, immutable) - Creation timestamp
+//   - updatedAt: int | timestamp (optional) - Last save timestamp
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user is the bootstrapped Master Admin (santywin@gmail.com)
+    function isMasterAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email != null &&
+        request.auth.token.email == 'santywin@gmail.com';
+    }
+
+    // Check if the authenticated user has an active admin document in /allowed_users/{email}
+    function isDelegatedAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email != null &&
+        exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)) &&
+        get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.role == 'admin' &&
+        get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.active == true;
+    }
+
+    // Check if the user is the Master Admin or an active delegated Admin
+    function isAdmin() {
+      return isMasterAdmin() || isDelegatedAdmin();
+    }
+
+    // Check if user owns the resource by UID or verified email
+    function isOwner(userId) {
+      return isAuthenticated() && (
+        request.auth.uid == userId ||
+        (request.auth.token.email != null && request.auth.token.email == userId)
+      );
+    }
+
+    // Check if user is owner based on document's uid field
+    function isDocOwner() {
+      return isAuthenticated() &&
+        ('uid' in resource.data) &&
+        request.auth.uid == resource.data.uid;
+    }
+
+    // Verify UID hasn't been tampered with on create
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    // Ensure uid field is not modified on update
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        !('uid' in resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    // Validate required fields exist
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that the document contains only the allowed fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that immutable fields have not changed on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Validate string length
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate optional string (if present, must be string and within length)
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) || (
+        request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen
+      );
+    }
+
+    // Validate optional boolean
+    function isValidOptionalBool(field) {
+      return !(field in request.resource.data) ||
+        request.resource.data[field] is bool;
+    }
+
+    // Validate optional timestamp or integer epoch ms
+    function isValidOptionalTime(field) {
+      return !(field in request.resource.data) ||
+        request.resource.data[field] is int ||
+        request.resource.data[field] is timestamp;
+    }
+
+    // Validate email format
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 3 &&
+        email.size() <= 254 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Validate that a list is a list and enforces size limits
+    function isValidList(list, maxSize) {
+      return list is list && list.size() <= maxSize;
+    }
+
+    // Validate optional list with max size
+    function isValidOptionalList(field, maxSize) {
+      return !(field in request.resource.data) ||
+        isValidList(request.resource.data[field], maxSize);
+    }
+
+    // ===============================================================
+    // Domain Validators (Called in BOTH create and update)
+    // ===============================================================
+
+    function isValidAllowedUser(data, emailId) {
+      return hasRequiredFields(['email', 'role', 'active']) &&
+        hasOnlyAllowedFields(['email', 'name', 'pin', 'role', 'active', 'createdAt', 'updatedAt']) &&
+        data.email == emailId &&
+        isValidEmail(data.email) &&
+        data.role in ['admin', 'user'] &&
+        data.active is bool &&
+        isValidOptionalString('name', 0, 100) &&
+        isValidOptionalString('pin', 0, 50) &&
+        isValidOptionalTime('createdAt') &&
+        isValidOptionalTime('updatedAt');
+    }
+
+    function isValidAuthStore(data) {
+      return hasRequiredFields(['users']) &&
+        hasOnlyAllowedFields(['users', 'googleClientId', 'adminEmail', 'updatedAt']) &&
+        isValidList(data.users, 500) &&
+        isValidOptionalString('googleClientId', 0, 300) &&
+        isValidOptionalString('adminEmail', 0, 254) &&
+        isValidOptionalTime('updatedAt');
+    }
+
+    function isValidBingoData(data) {
+      return hasRequiredFields(['cards', 'calledNumbers']) &&
+        hasOnlyAllowedFields([
+          'cards',
+          'calledNumbers',
+          'activePatternIds',
+          'customPatterns',
+          'soundEnabled',
+          'patternsMinimized',
+          'boardMinimized',
+          'show99Balls',
+          'sortBy',
+          'email',
+          'uid',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidList(data.cards, 500) &&
+        isValidList(data.calledNumbers, 1000) &&
+        isValidOptionalList('activePatternIds', 100) &&
+        isValidOptionalList('customPatterns', 200) &&
+        isValidOptionalBool('soundEnabled') &&
+        isValidOptionalBool('patternsMinimized') &&
+        isValidOptionalBool('boardMinimized') &&
+        isValidOptionalBool('show99Balls') &&
+        isValidOptionalString('sortBy', 0, 30) &&
+        isValidOptionalString('email', 0, 254) &&
+        isValidOptionalString('uid', 0, 128) &&
+        isValidOptionalTime('createdAt') &&
+        isValidOptionalTime('updatedAt');
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // 1. Authorized Google Users Allowlist (/allowed_users/{emailId})
+    match /allowed_users/{emailId} {
+      // Master Admin or active admin can read any allowed_users doc;
+      // any authenticated user can get their own document by email to verify authorization.
+      allow get: if isAdmin() || (
+        isAuthenticated() &&
+        request.auth.token.email != null &&
+        request.auth.token.email == emailId
+      );
+      allow list: if isAdmin();
+
+      // Only Master Admin or active admins can create, update, or delete authorized users.
+      allow create: if isAdmin() &&
+        isValidAllowedUser(request.resource.data, emailId);
+
+      allow update: if isAdmin() &&
+        isValidAllowedUser(request.resource.data, emailId) &&
+        areImmutableFieldsUnchanged(['email', 'createdAt']);
+
+      allow delete: if isAdmin() && emailId != 'santywin@gmail.com';
+    }
+
+    // 2. Application Auth Store Configuration (/config/auth_store)
+    match /config/auth_store {
+      // Authenticated users can read the auth configuration to verify session status;
+      // only Master Admin or active admins can write to it.
+      allow read: if isAuthenticated();
+
+      allow create: if isAdmin() &&
+        isValidAuthStore(request.resource.data);
+
+      allow update: if isAdmin() &&
+        isValidAuthStore(request.resource.data);
+
+      allow delete: if isAdmin();
+    }
+
+    // 3. Per-User Bingo Cards, Patterns & Round State (/user_bingo_data/{userId})
+    match /user_bingo_data/{userId} {
+      allow read: if isOwner(userId) || isMasterAdmin();
+
+      allow create: if (isOwner(userId) || isMasterAdmin()) &&
+        uidUnchanged() &&
+        isValidBingoData(request.resource.data);
+
+      allow update: if (isOwner(userId) || isMasterAdmin()) &&
+        uidNotModified() &&
+        areImmutableFieldsUnchanged(['uid', 'email', 'createdAt']) &&
+        isValidBingoData(request.resource.data);
+
+      allow delete: if isOwner(userId) || isMasterAdmin();
+    }
+
+    // Default deny for all other collections and paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

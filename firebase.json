@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "SantyWin Bingo",
+        "supportEmail": "santywin@gmail.com",
+        "authorizedRedirectUris": [
+          "https://santywin-bingo-2026.firebaseapp.com/__/auth/handler",
+          "https://santywin-bingo-2026.web.app/__/auth/handler",
+          "https://bingo-santywin.vercel.app",
+          "https://bingo-santywins-projects.vercel.app",
+          "http://localhost:3000"
+        ]
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json",
+    "database": "(default)",
+    "location": "nam5"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "api/**"
+    ]
+  }
+}

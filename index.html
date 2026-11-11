@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SantyWin Bingo — Verificador de Cartones y Editor de Patrones</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+  <!-- PANTALLA DE BLOQUEO Y ACCESO RESTRINGIDO POR CORREO GOOGLE -->
+  <div id="authLockScreen" class="auth-lock-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span>SW</span><span>75</span>
+      </div>
+      <h2>SantyWin <span class="badge-clean">BINGO</span></h2>
+      <p class="auth-subtitle">Acceso exclusivo para correos Google autorizados por el administrador.</p>
+
+      <!-- Botón Oficial de Google (Firebase Authentication) -->
+      <div id="googleSignInContainer" class="google-signin-container">
+        <button type="button" id="btnFirebaseGoogleLogin" class="btn-google-oauth">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Continuar con Google (Firebase Auth)</span>
+        </button>
+        <div id="googleSignInButton"></div>
+        <div class="auth-divider"><span>o ingresa con tu correo autorizado y PIN</span></div>
+      </div>
+
+      <!-- Formulario de ingreso con correo Gmail autorizado + PIN -->
+      <form id="emailPinLoginForm" class="auth-form" autocomplete="on">
+        <label class="form-label">
+          Correo Google (@gmail.com)
+          <input type="email" id="loginEmailInput" placeholder="tucorreo@gmail.com" required />
+        </label>
+        <label class="form-label">
+          Clave / PIN de Acceso
+          <input type="password" id="loginPinInput" placeholder="Ingresa tu PIN asignado" required />
+        </label>
+        <div id="loginErrorMsg" class="validation-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-block auth-submit-btn">
+          🔐 Entrar al Sistema
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <span>SW</span><span>75</span>
+      </div>
+      <div>
+        <h1>Santywin <span class="badge-clean">BINGO</span></h1>
+        <p class="subtitle">Seguimiento Automático de Cartones y Editor de Patrones</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div id="userSessionBar" class="user-session-bar hidden">
+        <span id="currentUserEmailBadge" class="user-email-badge" title="Usuario autenticado"></span>
+        <button id="btnOpenAdminModal" type="button" class="btn btn-xs btn-secondary hidden" title="Administrar correos Google con permiso de acceso">
+          👑 Accesos
+        </button>
+        <button id="btnLogout" type="button" class="btn btn-xs btn-ghost" title="Cerrar sesión">
+          🚪 Salir
+        </button>
+      </div>
+      <button id="btnSoundToggle" class="btn btn-icon" title="Activar/Desactivar sonidos">
+        <span id="soundIcon">🔊</span>
+      </button>
+      <button id="btnOpenPatternModal" class="btn btn-secondary">
+        <span>🎯</span> Patrón: <strong id="activePatternLabel">Línea Simple</strong>
+      </button>
+      <button id="btnOpenCardModal" class="btn btn-primary">
+        <span>➕</span> Nuevo Cartón
+      </button>
+      <button id="btnResetRound" class="btn btn-accent"
+        title="Vaciar todas las casillas marcadas conservando tus cartones actuales">
+        <span>🧹</span> Nuevo Juego
+      </button>
+    </div>
+  </header>
+
+  <!-- Urgent One-Away & Bingo Banner -->
+  <section id="statusAlertsBar" class="alerts-bar">
+    <div class="alert-stat bingo-stat" id="statBingoBox">
+      <span class="stat-count" id="statBingoCount">0</span>
+      <span class="stat-label">¡BINGO!</span>
+    </div>
+    <div class="alert-stat oneaway-stat" id="statOneAwayBox">
+      <span class="stat-count" id="statOneAwayCount">0</span>
+      <span class="stat-label">A 1 bola</span>
+    </div>
+    <div class="waiting-balls-container" id="waitingBallsContainer">
+      <span class="waiting-title">🔥 Bolas para ganar ahora:</span>
+      <div id="waitingBallsList" class="waiting-balls-list">
+        <span class="muted-hint">Marca números en el tablero para ver qué bolas te hacen ganar.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Toolbar: Filter, Sort, Backup (Above Numbers) -->
+  <section class="top-cards-toolbar-wrapper">
+    <div class="cards-toolbar">
+      <div class="filter-tabs" role="tablist">
+        <button class="filter-tab active" data-filter="all" role="tab">
+          Todos (<span id="countFilterAll">0</span>)
+        </button>
+        <button class="filter-tab tab-bingo" data-filter="bingo" role="tab">
+          🏆 ¡BINGO! (<span id="countFilterBingo">0</span>)
+        </button>
+        <button class="filter-tab tab-oneaway" data-filter="oneaway" role="tab">
+          🔥 A 1 Bola (<span id="countFilterOneAway">0</span>)
+        </button>
+        <button class="filter-tab tab-twoaway" data-filter="twoaway" role="tab">
+          ⚡ A 2 Bolas (<span id="countFilterTwoAway">0</span>)
+        </button>
+      </div>
+
+      <div class="toolbar-controls">
+        <label class="sort-select-label">
+          Ordenar:
+          <select id="sortCardsSelect">
+            <option value="closest">Más cerca de ganar primero</option>
+            <option value="id">Orden de creación</option>
+            <option value="name">Nombre del cartón</option>
+          </select>
+        </label>
+        <button id="btnExportImport" class="btn btn-sm btn-ghost" title="Exportar o importar tus cartones">
+          💾 Respaldo
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace Layout -->
+  <main id="mainLayout" class="main-layout">
+    <!-- Left / Top Panel: Number Dabber & Quick Input -->
+    <aside id="callerPanel" class="caller-panel">
+      <div class="panel-header">
+        <h2>Tablero de Marcado</h2>
+        <div class="panel-header-right">
+          <button type="button" id="btnToggle99Balls" class="btn btn-xs btn-ghost" title="Mostrar u ocultar bolas del 76 al 99">
+            + 76–99
+          </button>
+          <span class="called-counter"><strong id="calledCount">0</strong> marcadas</span>
+          <button type="button" id="btnToggleBoardNumbers" class="btn btn-xs btn-secondary" title="Minimizar o mostrar los números del tablero">
+            ▲ Minimizar Números
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Input & Last Balls -->
+      <div class="quick-dab-bar">
+        <form id="quickDabForm" class="quick-input-form" autocomplete="off" novalidate>
+          <input type="number" id="quickNumberInput" min="1" max="999" placeholder="Ej: 42 o 99 + Enter"
+            aria-label="Ingresar número a marcar" />
+          <button type="submit" class="btn btn-primary">Marcar</button>
+        </form>
+        <div class="caller-mini-actions">
+          <button id="btnUndoLast" class="btn btn-ghost" title="Deshacer última bola marcada" disabled>
+            ↩️ Deshacer última bola
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent History Strip -->
+      <div class="history-strip">
+        <span class="history-label">Últimas:</span>
+        <div id="recentBallsList" class="recent-balls">
+          <span class="empty-history">Ninguna bola marcada aún</span>
+        </div>
+      </div>
+
+      <!-- Master 75-Ball Grid (B I N G O rows) -->
+      <div id="masterBoard" class="master-board" role="group" aria-label="Tablero de 75 bolas">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+    <!-- Right / Main Content: Cards Tracker & Automatic Verifier -->
+    <section class="cards-section">
+      <!-- Cards Grid Container -->
+      <div id="cardsGrid" class="cards-grid">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: Pattern Selector & Custom Pattern Editor (Point 4) -->
+  <div id="patternModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="patternModalTitle">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 id="patternModalTitle">🎯 Selector y Editor de Patrones de Bingo</h2>
+          <p class="modal-subtitle">Elige un patrón predefinido o dibuja tus propias reglas de casa en la cuadrícula
+            5×5.</p>
+        </div>
+        <button class="btn-close" data-close-modal="patternModal" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body pattern-modal-layout">
+        <!-- Left column: Preset & Saved Custom Patterns List -->
+        <div class="pattern-list-column">
+          <div class="pattern-category-header">
+            <div>
+              <h3>Patrones para Ganar (<span id="modalSelectedPatternsCount">1</span> marcados)</h3>
+              <span class="hint-text">Toca cualquier patrón para marcarlo o desmarcarlo (puedes elegir varios a la
+                vez)</span>
+            </div>
+            <div class="pattern-bulk-btns">
+              <button type="button" id="btnSelectOnlyFirstPattern" class="btn btn-xs btn-ghost"
+                title="Dejar activo únicamente el primer patrón">
+                Dejar solo 1
+              </button>
+              <button type="button" id="btnSelectAllPatterns" class="btn btn-xs btn-ghost"
+                title="Activar todos los patrones de la lista">
+                Marcar todos
+              </button>
+            </div>
+          </div>
+
+          <!-- Active selected pattern chips -->
+          <div id="selectedPatternsChipsBar" class="selected-patterns-chips">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="pattern-search-bar">
+            <input type="text" id="patternSearchInput" placeholder="Buscar patrón (ej. Línea, X, Marco, Lleno...)" />
+          </div>
+
+          <div id="presetPatternsList" class="patterns-grid-selector">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Right column: Custom Pattern Creator / Inspector -->
+        <div class="pattern-editor-column">
+          <h3>✏️ Creador de Patrón Personalizado</h3>
+          <p class="editor-instructions">
+            Haz clic en las casillas de abajo para encender/apagar las posiciones que deben marcarse para cantar Bingo.
+          </p>
+
+          <div class="custom-editor-form">
+            <label class="form-label">
+              Nombre del Patrón
+              <input type="text" id="customPatternName" placeholder="Ej: Reloj de Arena, Letra M, Esquinas..."
+                maxlength="40" />
+            </label>
+
+            <div class="editor-bingo-header">
+              <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+            </div>
+            <div id="customPatternEditorGrid" class="editor-grid-5x5">
+              <!-- 25 interactive cells -->
+            </div>
+
+            <div class="editor-quick-tools">
+              <button type="button" id="btnEditorClear" class="btn btn-xs btn-ghost">Limpiar</button>
+              <button type="button" id="btnEditorInvert" class="btn btn-xs btn-ghost">Invertir</button>
+              <button type="button" id="btnEditorRotate" class="btn btn-xs btn-ghost" title="Rotar diseño 90 grados">🔄
+                Rotar 90°</button>
+              <button type="button" id="btnEditorFill" class="btn btn-xs btn-ghost">Llenar todo</button>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="customPatternIncludeRotations" />
+              <span>Permitir las 4 rotaciones (0°, 90°, 180°, 270°) como válidas</span>
+            </label>
+
+            <div class="editor-save-actions">
+              <button type="button" id="btnSaveCustomPattern" class="btn btn-primary btn-block">
+                💾 Guardar y Activar Patrón Personalizado
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-close-modal="patternModal">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Create / Edit Physical Bingo Card (Point 2) -->
+  <div id="cardModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="cardModalTitle">➕ Agregar / Editar Cartón de Bingo</h2>
+          <p class="modal-subtitle">Copia los números de tu cartón físico de papel o genera uno aleatorio al instante.
+          </p>
+        </div>
+        <button class="btn-close" data-close-modal="cardModal" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <form id="cardEditorForm" class="modal-body" novalidate>
+        <input type="hidden" id="editingCardId" value="" />
+
+        <div class="card-form-top">
+          <label class="form-label flex-1">
+            Nombre o Código del Cartón
+            <input type="text" id="cardNameInput" placeholder="Ej: Cartón Rojo #104" maxlength="35" />
+          </label>
+          <label class="form-label">
+            Color de Etiqueta
+            <select id="cardColorInput">
+              <option value="blue">Azul</option>
+              <option value="emerald">Esmeralda</option>
+              <option value="purple">Púrpura</option>
+              <option value="amber">Ámbar</option>
+              <option value="rose">Rosa</option>
+              <option value="cyan">Cian</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="card-editor-ranges-hint">
+          <span><strong>B:</strong> 1–15</span>
+          <span><strong>I:</strong> 16–30</span>
+          <span><strong>N:</strong> 31–45</span>
+          <span><strong>G:</strong> 46–60</span>
+          <span><strong>O:</strong> 61–75 (o libre hasta 99)</span>
+        </div>
+
+        <div class="editor-bingo-header">
+          <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+        </div>
+
+        <div id="cardNumbersInputGrid" class="card-input-grid-5x5">
+          <!-- 25 inputs populated by JS -->
+        </div>
+
+        <div id="cardValidationError" class="validation-warning hidden"></div>
+
+        <div class="card-editor-helpers">
+          <button type="button" id="btnFillRandomCard" class="btn btn-sm btn-secondary">
+            🎲 Rellenar Aleatorio Válido
+          </button>
+          <button type="button" id="btnClearCardInputs" class="btn btn-sm btn-ghost">
+            🧹 Vaciar Casillas
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="cardModal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cartón</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Export / Import Backup -->
+  <div id="backupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="backupModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="backupModalTitle">💾 Respaldo de Cartones y Patrones</h2>
+          <p class="modal-subtitle">Descarga tus cartones en un archivo o importa un archivo para sumarlos a los que ya tienes.</p>
+        </div>
+        <button class="btn-close" data-close-modal="backupModal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="file" id="backupFileInput" accept=".json,application/json" class="hidden" />
+        <textarea id="backupJsonTextarea" rows="8" class="backup-textarea" readonly
+          placeholder="Vista previa de tu respaldo actual..."></textarea>
+        <div class="backup-actions">
+          <button type="button" id="btnDownloadBackup" class="btn btn-secondary">⬇️ Descargar Respaldo (.json)</button>
+          <button type="button" id="btnImportBackup" class="btn btn-primary">📂 Importar Archivo (Agregar)</button>
+          <button type="button" id="btnDeleteAllCards" class="btn btn-danger-outline">🗑️ Borrar Todos los Cartones</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Admin Panel — Gestión de Correos Google Autorizados -->
+  <div id="adminAuthModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="adminModalTitle">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 id="adminModalTitle">👑 Panel de Administrador — Correos Autorizados</h2>
+          <p class="modal-subtitle">Solo los correos Google registrados y activos en esta lista pueden entrar a SantyWin Bingo.</p>
+        </div>
+        <button class="btn-close" data-close-modal="adminAuthModal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Agregar nuevo correo -->
+        <form id="addAuthorizedUserForm" class="admin-add-user-form" autocomplete="off">
+          <label class="form-label flex-1">
+            Correo Google (@gmail.com)
+            <input type="email" id="newAuthEmailInput" placeholder="ejemplo@gmail.com" required />
+          </label>
+          <label class="form-label">
+            Nombre / Jugador
+            <input type="text" id="newAuthNameInput" placeholder="Ej: Carlos" maxlength="30" />
+          </label>
+          <label class="form-label">
+            PIN / Clave asignada
+            <input type="text" id="newAuthPinInput" placeholder="Ej: 1234" required maxlength="20" />
+          </label>
+          <button type="submit" class="btn btn-primary">➕ Autorizar Correo</button>
+        </form>
+
+        <!-- Tabla de correos autorizados -->
+        <div class="admin-users-list-wrapper">
+          <h3>Correos con Acceso (<span id="authorizedUsersCount">1</span>)</h3>
+          <div id="authorizedUsersList" class="admin-users-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Estado de Conexión Firebase Auth + Cloud Firestore -->
+        <details class="admin-oauth-details">
+          <summary>🔥 Conectado a Firebase Authentication + Cloud Firestore (santywin-bingo-2026)</summary>
+          <div class="admin-oauth-box">
+            <p class="hint-text">
+              ✅ Tu proyecto está conectado a <strong>Firebase Authentication</strong> y <strong>Cloud Firestore</strong> (ID: <code>santywin-bingo-2026</code>). Todos los correos autorizados aquí y los cartones de cada usuario se sincronizan en la nube.
+            </p>
+            <div class="admin-oauth-row">
+              <input type="text" id="adminGoogleClientIdInput" placeholder="Client ID adicional (opcional)" />
+              <button type="button" id="btnSaveGoogleClientId" class="btn btn-sm btn-secondary">Guardar</button>
+            </div>
+          </div>
+        </details>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="adminAuthModal">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BINGO CELEBRATION TOAST / BANNER -->
+  <div id="bingoToast" class="bingo-toast hidden" role="status" aria-live="assertive">
+    <div class="bingo-toast-inner">
+      <div class="bingo-toast-icon">🎉</div>
+      <div class="bingo-toast-text">
+        <h3 id="bingoToastTitle">¡BINGO DETECTADO!</h3>
+        <p id="bingoToastDesc">El Cartón #1 ha completado el patrón.</p>
+      </div>
+      <button id="btnViewWinningCards" class="btn btn-sm btn-light">Ver Ganadores</button>
+      <button id="btnDismissToast" class="btn-close-toast" aria-label="Cerrar aviso">&times;</button>
+    </div>
+  </div>
+
+  <script type="module" src="firebase-service.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
