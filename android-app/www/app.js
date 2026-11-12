@@ -118,7 +118,7 @@
     },
     {
       id: 'line_diagonal',
-      name: 'Diagonales',
+      name: 'Patrones',
       description: 'Cualquiera de las 2 líneas diagonales principales',
       isCustom: false,
       previewMask: indicesToMask([0, 6, 12, 18, 24]),
@@ -361,8 +361,7 @@
   }
 
   function formatBallLabel(num) {
-    const letter = getLetterForNumber(num);
-    return letter === '#' ? `#${num}` : `${letter}-${num}`;
+    return String(num);
   }
 
   /** Genera una matriz de 25 números (índices 0..24 por filas, centro 12 = 0/FREE) */
@@ -1297,7 +1296,7 @@
       idInput.value = '';
       nameInput.value = `Cartón #${nextNum}`;
       colorInput.value = CARD_COLORS[(nextNum - 1) % CARD_COLORS.length];
-      buildCardEditorInputs(generateRandomCardNumbers());
+      buildCardEditorInputs(new Array(25).fill(0));
     }
 
     modal.classList.remove('hidden');
@@ -1896,9 +1895,15 @@
     // Toast de Bingo
     document.getElementById('btnDismissToast').addEventListener('click', hideBingoToast);
     document.getElementById('btnViewWinningCards').addEventListener('click', () => {
-      state.filterMode = 'bingo';
+      state.filterMode = 'all';
       hideBingoToast();
       renderAll(null);
+      requestAnimationFrame(() => {
+        const firstWinner = document.querySelector('#cardsGrid .bingo-card.status-bingo');
+        if (firstWinner) {
+          firstWinner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
     });
 
     // Controles específicos de la edición móvil Android
@@ -1968,4 +1973,3 @@
   bindEvents();
   renderAll(null);
 })();
-

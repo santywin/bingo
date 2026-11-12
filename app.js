@@ -118,7 +118,7 @@
     },
     {
       id: 'line_diagonal',
-      name: 'Quina Diagonal',
+      name: 'Patrones',
       description: 'Completa cualquiera de las 2 diagonales',
       isCustom: false,
       previewMask: indicesToMask([0, 6, 12, 18, 24]),
@@ -352,8 +352,7 @@
   }
 
   function formatBallLabel(num) {
-    const letter = getLetterForNumber(num);
-    return letter === '#' ? `#${num}` : `${letter}-${num}`;
+    return String(num);
   }
 
   /** Genera una matriz de 25 números (índices 0..24 por filas, centro 12 = 0/FREE) */
@@ -437,9 +436,9 @@
       // ignore corrupted storage
     }
 
-    const availablePatternIds = new Set(PRESET_PATTERNS.slice(0, 3).map((pattern) => pattern.id));
-    const savedPatternId = state.activePatternIds.find((id) => availablePatternIds.has(id));
-    state.activePatternIds = [savedPatternId || 'line_horizontal'];
+    const availablePatternIds = new Set([...PRESET_PATTERNS, ...state.customPatterns].map((pattern) => pattern.id));
+    const savedPatternIds = state.activePatternIds.filter((id) => availablePatternIds.has(id));
+    state.activePatternIds = savedPatternIds.length > 0 ? savedPatternIds : ['line_horizontal'];
 
     if (state.cards.length === 0) {
       state.cards = createSampleCards(4, 1);
@@ -478,7 +477,7 @@
   }
 
   function getAllPatterns() {
-    return PRESET_PATTERNS.slice(0, 3);
+    return [...PRESET_PATTERNS, ...state.customPatterns];
   }
 
   function getActivePatterns() {
@@ -978,9 +977,26 @@
 
   function renderPatternModalList() {
     const container = document.getElementById('presetPatternsList');
+    const chipsBar = document.getElementById('selectedPatternsChipsBar');
+    const countSpan = document.getElementById('modalSelectedPatternsCount');
+    const searchInput = document.getElementById('patternSearchInput');
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
     container.innerHTML = '';
     const activePatterns = getActivePatterns();
-    getAllPatterns().forEach((pattern) => {
+    if (countSpan) countSpan.textContent = activePatterns.length;
+    if (chipsBar) {
+      chipsBar.innerHTML = '';
+      activePatterns.forEach((pattern) => {
+        const chip = document.createElement('span');
+        chip.className = 'selected-pattern-chip';
+        chip.textContent = `✓ ${pattern.name}`;
+        chipsBar.appendChild(chip);
+      });
+    }
+
+    getAllPatterns().filter((pattern) => {
+      return !query || pattern.name.toLowerCase().includes(query) || pattern.description.toLowerCase().includes(query);
+    }).forEach((pattern) => {
       const isSelected = state.activePatternIds.includes(pattern.id);
       const card = document.createElement('div');
       card.className = 'pattern-option-card' + (isSelected ? ' selected' : '');
@@ -1023,7 +1039,20 @@
       card.appendChild(nameEl);
       card.appendChild(subEl);
 
-      card.addEventListener('click', () => selectSinglePattern(pattern.id, pattern));
+      card.addEventListener('click', () => togglePatternSelection(pattern.id, pattern));
+
+      if (pattern.isCustom) {
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn-delete-custom-pattern';
+        deleteButton.textContent = '×';
+        deleteButton.title = 'Eliminar patrón personalizado';
+        deleteButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          deleteCustomPattern(pattern.id);
+        });
+        card.appendChild(deleteButton);
+      }
 
       container.appendChild(card);
     });
@@ -1228,7 +1257,7 @@
       idInput.value = '';
       nameInput.value = `Cartón #${nextNum}`;
       colorInput.value = CARD_COLORS[(nextNum - 1) % CARD_COLORS.length];
-      buildCardEditorInputs(generateRandomCardNumbers());
+      buildCardEditorInputs(new Array(25).fill(0));
     }
 
     modal.classList.remove('hidden');
@@ -1346,9 +1375,44 @@
     // Abrir modal de patrones
     const openPatterns = () => {
       renderPatternModalList();
+      renderCustomPatternEditorGrid();
       document.getElementById('patternModal').classList.remove('hidden');
     };
     document.getElementById('btnOpenPatternModal').addEventListener('click', openPatterns);
+
+    document.getElementById('patternSearchInput').addEventListener('input', renderPatternModalList);
+    document.getElementById('btnSelectOnlyFirstPattern').addEventListener('click', () => {
+      const firstId = state.activePatternIds[0] || 'line_horizontal';
+      state.activePatternIds = [firstId];
+      saveState();
+      syncPreviousWinnerSets();
+      renderPatternModalList();
+      renderAll(null);
+    });
+    document.getElementById('btnSelectAllPatterns').addEventListener('click', () => {
+      state.activePatternIds = getAllPatterns().map((p) => p.id);
+      saveState();
+      syncPreviousWinnerSets();
+      renderPatternModalList();
+      renderAll(null);
+    });
+    document.getElementById('btnEditorClear').addEventListener('click', () => {
+      state.editorCells = new Array(25).fill(0);
+      renderCustomPatternEditorGrid();
+    });
+    document.getElementById('btnEditorFill').addEventListener('click', () => {
+      state.editorCells = new Array(25).fill(1);
+      renderCustomPatternEditorGrid();
+    });
+    document.getElementById('btnEditorInvert').addEventListener('click', () => {
+      state.editorCells = state.editorCells.map((v) => (v === 1 ? 0 : 1));
+      renderCustomPatternEditorGrid();
+    });
+    document.getElementById('btnEditorRotate').addEventListener('click', () => {
+      state.editorCells = rotateMask90(state.editorCells);
+      renderCustomPatternEditorGrid();
+    });
+    document.getElementById('btnSaveCustomPattern').addEventListener('click', saveCustomPattern);
 
     // Abrir modal de nuevo cartón
     document.getElementById('btnOpenCardModal').addEventListener('click', () => {
@@ -1483,9 +1547,15 @@
     // Toast de Bingo
     document.getElementById('btnDismissToast').addEventListener('click', hideBingoToast);
     document.getElementById('btnViewWinningCards').addEventListener('click', () => {
-      state.filterMode = 'bingo';
+      state.filterMode = 'all';
       hideBingoToast();
       renderAll(null);
+      requestAnimationFrame(() => {
+        const firstWinner = document.querySelector('#cardsGrid .bingo-card.status-bingo');
+        if (firstWinner) {
+          firstWinner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
     });
 
     // Cerrar modales
@@ -1511,4 +1581,3 @@
   bindEvents();
   renderAll(null);
 })();
-

@@ -76,29 +76,59 @@
     </section>
   </main>
 
-  <!-- MODAL 1: Selector de quina -->
+  <!-- MODAL 1: Selector y creador de patrones -->
   <div id="patternModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
     aria-labelledby="patternModalTitle">
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <div>
-          <h2 id="patternModalTitle">🎯 Elige la quina</h2>
-          <p class="modal-subtitle">Selecciona cómo se gana esta partida.</p>
+          <h2 id="patternModalTitle">🎯 Patrones de juego</h2>
+          <p class="modal-subtitle">Elige uno o varios patrones para verificar cómo ganas.</p>
         </div>
         <button class="btn-close" data-close-modal="patternModal" aria-label="Cerrar">&times;</button>
       </div>
 
-      <div class="modal-body pattern-modal-simple">
-        <div class="pattern-list-column">
-          <div class="pattern-category-header">
-            <div>
-              <h3>Forma de ganar</h3>
-              <span class="hint-text">Toca una opción para dejarla activa.</span>
+      <div class="modal-body pattern-modal-layout">
+        <div class="preset-patterns-column">
+          <div class="patterns-column-header">
+            <h3>Activos (<span id="modalSelectedPatternsCount">1</span>)</h3>
+            <div class="patterns-bulk-actions">
+              <button type="button" id="btnSelectOnlyFirstPattern" class="btn btn-xs btn-ghost">Dejar 1</button>
+              <button type="button" id="btnSelectAllPatterns" class="btn btn-xs btn-ghost">Todos</button>
             </div>
           </div>
+          <div id="selectedPatternsChipsBar" class="selected-patterns-chips"></div>
+          <div class="pattern-search-bar">
+            <input type="search" id="patternSearchInput" placeholder="🔍 Buscar patrón..." />
+          </div>
+          <div id="presetPatternsList" class="patterns-grid-selector"></div>
+        </div>
 
-          <div id="presetPatternsList" class="patterns-grid-selector">
-            <!-- Populated by JS -->
+        <div class="pattern-editor-column">
+          <h3>✨ Crear mi patrón</h3>
+          <p class="editor-instructions">Toca las casillas para dibujar la figura que quieres jugar.</p>
+          <div class="custom-editor-form">
+            <label class="form-label">
+              Nombre del patrón
+              <input type="text" id="customPatternName" placeholder="Ej: Letra Z, Cruz..." maxlength="32" />
+            </label>
+            <div class="editor-bingo-header">
+              <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+            </div>
+            <div id="customPatternEditorGrid" class="editor-grid-5x5"></div>
+            <div class="editor-quick-tools">
+              <button type="button" id="btnEditorClear" class="btn btn-xs btn-ghost">Vaciar</button>
+              <button type="button" id="btnEditorFill" class="btn btn-xs btn-ghost">Llenar</button>
+              <button type="button" id="btnEditorInvert" class="btn btn-xs btn-ghost">Invertir</button>
+              <button type="button" id="btnEditorRotate" class="btn btn-xs btn-ghost">🔄 Rotar</button>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="customPatternIncludeRotations" />
+              <span>Permitir las 4 rotaciones</span>
+            </label>
+            <button type="button" id="btnSaveCustomPattern" class="btn btn-primary btn-block">
+              💾 Guardar y usar patrón
+            </button>
           </div>
         </div>
       </div>
