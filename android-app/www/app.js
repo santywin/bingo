@@ -1383,9 +1383,7 @@
       cp: state.customPatterns,
       ap: state.activePatternIds,
     };
-    const jsonStr = JSON.stringify(compactPayload);
-    const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    return `BINGO-WIN:${b64}`;
+    return `BINGO-WIN2:${JSON.stringify(compactPayload)}`;
   }
 
   function buildWhatsAppShareMessage() {
@@ -1403,28 +1401,27 @@
     const trimmed = rawText.trim();
     if (!trimmed) return null;
 
-    // 1. Detectar código compacto BINGO-WIN:<base64> o SANTY-BINGO:<base64> (incluso dentro de un mensaje de WhatsApp)
-    const codeMatch = trimmed.match(/(?:BINGO-WIN|SANTY-BINGO):([A-Za-z0-9+/=_-]+)/);
-    if (codeMatch && codeMatch[1]) {
-      try {
-        const cleanB64 = codeMatch[1].replace(/-/g, '+').replace(/_/g, '/');
-        const decodedStr = decodeURIComponent(escape(atob(cleanB64)));
-        const parsed = JSON.parse(decodedStr);
-        if (parsed && Array.isArray(parsed.c)) {
-          return {
-            cards: parsed.c.map((item, i) => ({
-              name: item.n || `Cartón #${i + 1}`,
-              color: item.cl || 'blue',
-              numbers: Array.isArray(item.v) ? item.v : [],
-            })),
-            customPatterns: Array.isArray(parsed.cp) ? parsed.cp : [],
-            activePatternIds: Array.isArray(parsed.ap) ? parsed.ap : [],
-          };
-        }
-        if (parsed && Array.isArray(parsed.cards)) {
-          return parsed;
-        }
-      } catch (_) {}
+    // 1. Detectar código BINGO-WIN2:{...} (incluso dentro de un mensaje de WhatsApp)
+    const codeIdx = trimmed.indexOf('BINGO-WIN2:');
+    if (codeIdx !== -1) {
+      const body = trimmed.slice(codeIdx + 'BINGO-WIN2:'.length);
+      const endIdx = body.lastIndexOf('}');
+      if (endIdx !== -1) {
+        try {
+          const parsed = JSON.parse(body.slice(0, endIdx + 1).trim());
+          if (parsed && Array.isArray(parsed.c)) {
+            return {
+              cards: parsed.c.map((item, i) => ({
+                name: item.n || `Cartón #${i + 1}`,
+                color: item.cl || 'blue',
+                numbers: Array.isArray(item.v) ? item.v : [],
+              })),
+              customPatterns: Array.isArray(parsed.cp) ? parsed.cp : [],
+              activePatternIds: Array.isArray(parsed.ap) ? parsed.ap : [],
+            };
+          }
+        } catch (_) {}
+      }
     }
 
     // 2. Detectar JSON estándar (o extraer el bloque {...} si viene con texto alrededor)
@@ -1473,20 +1470,7 @@
         return true;
       }
     } catch (_) {}
-    try {
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      temp.style.position = 'fixed';
-      temp.style.opacity = '0';
-      document.body.appendChild(temp);
-      temp.focus();
-      temp.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(temp);
-      return ok;
-    } catch (_) {
-      return false;
-    }
+    return false;
   }
 
   function applyImportedBackup(data, replaceExisting = false) {
@@ -1713,8 +1697,9 @@
           } catch (_) {}
         }
 
-        // 3. Abrir esquema directo de WhatsApp
-        window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`;
+        // 3. Mostrar el mensaje en el cuadro para copiarlo manualmente
+        const shareTextarea = document.getElementById('backupJsonTextarea');
+        if (shareTextarea) shareTextarea.value = msg;
       });
     }
 
@@ -1813,16 +1798,6 @@
     if (btnPasteFromClipboard) {
       btnPasteFromClipboard.addEventListener('click', async () => {
         const textarea = document.getElementById('backupJsonTextarea');
-        try {
-          if (navigator.clipboard && navigator.clipboard.readText) {
-            const clipText = await navigator.clipboard.readText();
-            if (clipText && clipText.trim()) {
-              textarea.value = clipText.trim();
-              showBackupStatus('✅ Texto pegado. Ahora toca "Cargar y Reemplazar" o "Cargar y Sumar".');
-              return;
-            }
-          }
-        } catch (_) {}
         if (textarea) {
           textarea.focus();
           alert('Mantén presionado dentro del cuadro de texto y toca "Pegar".');
@@ -1832,17 +1807,7 @@
 
     const handleLoadFromTextarea = async (replaceExisting) => {
       const textarea = document.getElementById('backupJsonTextarea');
-      let rawText = textarea ? textarea.value.trim() : '';
-
-      if (!rawText && navigator.clipboard && navigator.clipboard.readText) {
-        try {
-          const clip = await navigator.clipboard.readText();
-          if (clip && clip.trim()) {
-            rawText = clip.trim();
-            if (textarea) textarea.value = rawText;
-          }
-        } catch (_) {}
-      }
+      const rawText = textarea ? textarea.value.trim() : '';
 
       if (!rawText) {
         alert('Primero pega en el cuadro de texto el mensaje o código que te compartieron por WhatsApp.');
