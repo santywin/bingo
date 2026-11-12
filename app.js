@@ -692,149 +692,51 @@
 
   function renderHeaderAndAlerts(activePatterns, bingoEvals, oneAwayEvals, globalNeededMap) {
     // Botón de sonido
-    document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+    const soundIcon = document.getElementById('soundIcon');
+    if (soundIcon) soundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
 
     // Etiqueta del patrón activo
     const patternLabel =
       activePatterns.length === 1
         ? activePatterns[0].name
         : `${activePatterns.length} Patrones Activos`;
-    document.getElementById('activePatternLabel').textContent = patternLabel;
-
-    // Contadores de alerta rápida
-    const statBingoBox = document.getElementById('statBingoBox');
-    const statOneAwayBox = document.getElementById('statOneAwayBox');
-    document.getElementById('statBingoCount').textContent = bingoEvals.length;
-    document.getElementById('statOneAwayCount').textContent = oneAwayEvals.length;
-
-    statBingoBox.classList.toggle('has-bingo', bingoEvals.length > 0);
-    statOneAwayBox.classList.toggle('has-oneaway', oneAwayEvals.length > 0);
-
-    // Lista de bolas críticas ("Bolas para ganar ahora")
-    const waitingBallsList = document.getElementById('waitingBallsList');
-    waitingBallsList.innerHTML = '';
-
-    if (globalNeededMap.size === 0) {
-      const span = document.createElement('span');
-      span.className = 'muted-hint';
-      span.textContent =
-        state.calledNumbers.length === 0
-          ? 'Marca números en el tablero para ver qué bolas te hacen ganar.'
-          : 'Ningún cartón está a 1 bola todavía.';
-      waitingBallsList.appendChild(span);
-    } else {
-      const sortedNeeded = Array.from(globalNeededMap.entries()).sort((a, b) => a[0] - b[0]);
-      sortedNeeded.forEach(([num, cardCount]) => {
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'waiting-ball-chip';
-        chip.title = `Haz clic para marcar ${formatBallLabel(num)} (${cardCount} cartón/es la esperan)`;
-        chip.innerHTML = `${formatBallLabel(num)}${cardCount > 1 ? ` <small>(×${cardCount})</small>` : ''}`;
-        chip.addEventListener('click', () => toggleBall(num));
-        waitingBallsList.appendChild(chip);
-      });
-    }
+    const activePatternLabel = document.getElementById('activePatternLabel');
+    if (activePatternLabel) activePatternLabel.textContent = patternLabel;
   }
 
   function renderMasterBoard(calledSet, globalNeededMap) {
-    document.getElementById('calledCount').textContent = state.calledNumbers.length;
-    document.getElementById('btnUndoLast').disabled = state.calledNumbers.length === 0;
+    const calledCount = document.getElementById('calledCount');
+    if (calledCount) calledCount.textContent = state.calledNumbers.length;
 
-    const callerPanel = document.getElementById('callerPanel');
-    const mainLayout = document.getElementById('mainLayout');
-    const btnToggleBoard = document.getElementById('btnToggleBoardNumbers');
+    const btnUndo = document.getElementById('btnUndoLast');
+    if (btnUndo) btnUndo.disabled = state.calledNumbers.length === 0;
 
-    if (callerPanel) {
-      callerPanel.classList.toggle('minimized', !!state.boardMinimized);
-    }
-    if (mainLayout) {
-      mainLayout.classList.toggle('board-minimized', !!state.boardMinimized);
-    }
-    if (btnToggleBoard) {
-      btnToggleBoard.textContent = state.boardMinimized
-        ? '▼ Mostrar Números'
-        : '▲ Minimizar Números';
-    }
-
-    const hasNumbersOver75 =
-      state.calledNumbers.some((n) => n > 75) ||
-      state.cards.some((c) => c.numbers.some((n) => n > 75));
-    const showExtended = state.show99Balls || hasNumbersOver75;
-
-    const btnToggle99 = document.getElementById('btnToggle99Balls');
-    if (btnToggle99) {
-      btnToggle99.textContent = showExtended ? '▲ Ocultar 76–99' : '+ 76–99';
-    }
-
-    // Historial de últimas bolas
+    // Historial de últimas bolas (tocar una bola permite desmarcarla)
     const recentContainer = document.getElementById('recentBallsList');
-    recentContainer.innerHTML = '';
-    if (state.calledNumbers.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'empty-history';
-      empty.textContent = 'Ninguna bola marcada aún';
-      recentContainer.appendChild(empty);
-    } else {
-      const lastBalls = state.calledNumbers.slice(-8).reverse();
-      lastBalls.forEach((num, idx) => {
-        const pill = document.createElement('span');
-        pill.className = 'recent-ball-pill' + (idx === 0 ? ' latest' : '');
-        pill.textContent = formatBallLabel(num);
-        recentContainer.appendChild(pill);
-      });
-    }
-
-    // Tablero por filas B I N G O (+ filas extendidas 76-99 si están activas)
-    const masterBoard = document.getElementById('masterBoard');
-    masterBoard.innerHTML = '';
-
-    const rowsToRender = [...COL_RANGES];
-    if (showExtended) {
-      rowsToRender.push(
-        { letter: '+1', cssClass: 'EXT', min: 76, max: 90 },
-        { letter: '+2', cssClass: 'EXT', min: 91, max: 99 }
-      );
-    }
-
-    rowsToRender.forEach(({ letter, cssClass, min, max }) => {
-      const row = document.createElement('div');
-      row.className = 'master-row';
-
-      const letterEl = document.createElement('div');
-      letterEl.className = `master-letter letter-${cssClass || letter}`;
-      letterEl.textContent = letter;
-      row.appendChild(letterEl);
-
-      for (let n = min; n <= max; n++) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'master-ball';
-        if (calledSet.has(n)) {
-          btn.classList.add('called');
-        } else if (globalNeededMap.has(n)) {
-          btn.classList.add('needed-for-bingo');
-          btn.title = `¡Bola ganadora! Te da BINGO al instante`;
-        }
-        btn.textContent = n;
-        btn.addEventListener('click', () => toggleBall(n));
-        row.appendChild(btn);
+    if (recentContainer) {
+      recentContainer.innerHTML = '';
+      if (state.calledNumbers.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'empty-history';
+        empty.textContent = 'Ninguna bola marcada aún';
+        recentContainer.appendChild(empty);
+      } else {
+        const lastBalls = state.calledNumbers.slice().reverse();
+        lastBalls.forEach((num, idx) => {
+          const pill = document.createElement('span');
+          pill.className = 'recent-ball-pill' + (idx === 0 ? ' latest' : '');
+          pill.textContent = formatBallLabel(num);
+          pill.title = `Haz clic para desmarcar ${formatBallLabel(num)}`;
+          pill.style.cursor = 'pointer';
+          pill.addEventListener('click', () => toggleBall(num));
+          recentContainer.appendChild(pill);
+        });
       }
-
-      masterBoard.appendChild(row);
-    });
+    }
   }
 
-  function renderCardsToolbarCounts(allCount, bingoCount, oneAwayCount, twoAwayCount) {
-    document.getElementById('countFilterAll').textContent = allCount;
-    document.getElementById('countFilterBingo').textContent = bingoCount;
-    document.getElementById('countFilterOneAway').textContent = oneAwayCount;
-    document.getElementById('countFilterTwoAway').textContent = twoAwayCount;
-
-    document.querySelectorAll('.filter-tab').forEach((tab) => {
-      tab.classList.toggle('active', tab.dataset.filter === state.filterMode);
-    });
-
-    document.getElementById('sortCardsSelect').value = state.sortBy;
+  function renderCardsToolbarCounts() {
+    // Barra de filtros eliminada para mantener la interfaz limpia
   }
 
   function renderCardsGrid(evaluations, calledSet) {
@@ -1540,20 +1442,6 @@
     // Nueva ronda
     document.getElementById('btnResetRound').addEventListener('click', resetRound);
 
-    // Mostrar / ocultar bolas del 76 al 99 en el tablero
-    document.getElementById('btnToggle99Balls').addEventListener('click', () => {
-      state.show99Balls = !state.show99Balls;
-      saveState();
-      renderAll(null);
-    });
-
-    // Minimizar / mostrar la cuadrícula de números del tablero
-    document.getElementById('btnToggleBoardNumbers').addEventListener('click', () => {
-      state.boardMinimized = !state.boardMinimized;
-      saveState();
-      renderAll(null);
-    });
-
     // Marcado rápido por teclado (input 1-999 + Enter)
     document.getElementById('quickDabForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1569,33 +1457,11 @@
     // Deshacer última bola marcada
     document.getElementById('btnUndoLast').addEventListener('click', undoLastBall);
 
-    // Filtros de cartones
-    document.querySelectorAll('.filter-tab').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        state.filterMode = tab.dataset.filter;
-        renderAll(null);
-      });
-    });
-
-    // Clic en las cajas superiores de estadística filtra directamente
-    document.getElementById('statBingoBox').addEventListener('click', () => {
-      state.filterMode = state.filterMode === 'bingo' ? 'all' : 'bingo';
-      renderAll(null);
-    });
-    document.getElementById('statOneAwayBox').addEventListener('click', () => {
-      state.filterMode = state.filterMode === 'oneaway' ? 'all' : 'oneaway';
-      renderAll(null);
-    });
-
-    // Ordenamiento de cartones
-    document.getElementById('sortCardsSelect').addEventListener('change', (e) => {
-      state.sortBy = e.target.value;
-      saveState();
-      renderAll(null);
-    });
-
     // Modal de respaldo: Descargar archivo JSON e Importar archivo agregando cartones
-    document.getElementById('btnExportImport').addEventListener('click', openBackupModal);
+    const btnExportImport = document.getElementById('btnExportImport');
+    if (btnExportImport) {
+      btnExportImport.addEventListener('click', openBackupModal);
+    }
 
     document.getElementById('btnDownloadBackup').addEventListener('click', () => {
       const jsonContent = JSON.stringify(

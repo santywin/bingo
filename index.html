@@ -31,6 +31,9 @@
       <button id="btnOpenCardModal" class="btn btn-primary">
         <span>➕</span> Nuevo Cartón
       </button>
+      <button id="btnExportImport" class="btn btn-secondary" title="Compartir o cargar tus cartones">
+        <span>💾</span> Respaldo
+      </button>
       <button id="btnResetRound" class="btn btn-accent"
         title="Vaciar todas las casillas marcadas conservando tus cartones actuales">
         <span>🧹</span> Nuevo Juego
@@ -38,79 +41,13 @@
     </div>
   </header>
 
-  <!-- Urgent One-Away & Bingo Banner -->
-  <section id="statusAlertsBar" class="alerts-bar">
-    <div class="alert-stat bingo-stat" id="statBingoBox">
-      <span class="stat-count" id="statBingoCount">0</span>
-      <span class="stat-label">¡BINGO!</span>
-    </div>
-    <div class="alert-stat oneaway-stat" id="statOneAwayBox">
-      <span class="stat-count" id="statOneAwayCount">0</span>
-      <span class="stat-label">A 1 bola</span>
-    </div>
-    <div class="waiting-balls-container" id="waitingBallsContainer">
-      <span class="waiting-title">🔥 Bolas para ganar ahora:</span>
-      <div id="waitingBallsList" class="waiting-balls-list">
-        <span class="muted-hint">Marca números en el tablero para ver qué bolas te hacen ganar.</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Top Toolbar: Filter, Sort, Backup (Above Numbers) -->
-  <section class="top-cards-toolbar-wrapper">
-    <div class="cards-toolbar">
-      <div class="filter-tabs" role="tablist">
-        <button class="filter-tab active" data-filter="all" role="tab">
-          Todos (<span id="countFilterAll">0</span>)
-        </button>
-        <button class="filter-tab tab-bingo" data-filter="bingo" role="tab">
-          🏆 ¡BINGO! (<span id="countFilterBingo">0</span>)
-        </button>
-        <button class="filter-tab tab-oneaway" data-filter="oneaway" role="tab">
-          🔥 A 1 Bola (<span id="countFilterOneAway">0</span>)
-        </button>
-        <button class="filter-tab tab-twoaway" data-filter="twoaway" role="tab">
-          ⚡ A 2 Bolas (<span id="countFilterTwoAway">0</span>)
-        </button>
-      </div>
-
-      <div class="toolbar-controls">
-        <label class="sort-select-label">
-          Ordenar:
-          <select id="sortCardsSelect">
-            <option value="closest">Más cerca de ganar primero</option>
-            <option value="id">Orden de creación</option>
-            <option value="name">Nombre del cartón</option>
-          </select>
-        </label>
-        <button id="btnExportImport" class="btn btn-sm btn-ghost" title="Exportar o importar tus cartones">
-          💾 Respaldo
-        </button>
-      </div>
-    </div>
-  </section>
-
   <!-- Main Workspace Layout -->
-  <main id="mainLayout" class="main-layout">
-    <!-- Left / Top Panel: Number Dabber & Quick Input -->
-    <aside id="callerPanel" class="caller-panel">
-      <div class="panel-header">
-        <h2>Tablero de Marcado</h2>
-        <div class="panel-header-right">
-          <button type="button" id="btnToggle99Balls" class="btn btn-xs btn-ghost" title="Mostrar u ocultar bolas del 76 al 99">
-            + 76–99
-          </button>
-          <span class="called-counter"><strong id="calledCount">0</strong> marcadas</span>
-          <button type="button" id="btnToggleBoardNumbers" class="btn btn-xs btn-secondary" title="Minimizar o mostrar los números del tablero">
-            ▲ Minimizar Números
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Input & Last Balls -->
+  <main id="mainLayout" class="main-layout board-minimized">
+    <!-- Top Panel: Quick Number Input Only (Sin Tablero de Números) -->
+    <aside id="callerPanel" class="caller-panel minimized">
       <div class="quick-dab-bar">
         <form id="quickDabForm" class="quick-input-form" autocomplete="off" novalidate>
-          <input type="number" id="quickNumberInput" min="1" max="999" placeholder="Ej: 42 o 99 + Enter"
+          <input type="number" id="quickNumberInput" min="1" max="999" placeholder="Escribe # de bola (ej: 42) + Enter"
             aria-label="Ingresar número a marcar" />
           <button type="submit" class="btn btn-primary">Marcar</button>
         </form>
@@ -123,19 +60,14 @@
 
       <!-- Recent History Strip -->
       <div class="history-strip">
-        <span class="history-label">Últimas:</span>
+        <span class="history-label">Cantadas (<strong id="calledCount">0</strong>):</span>
         <div id="recentBallsList" class="recent-balls">
           <span class="empty-history">Ninguna bola marcada aún</span>
         </div>
       </div>
-
-      <!-- Master 75-Ball Grid (B I N G O rows) -->
-      <div id="masterBoard" class="master-board" role="group" aria-label="Tablero de 75 bolas">
-        <!-- Populated by JS -->
-      </div>
     </aside>
 
-    <!-- Right / Main Content: Cards Tracker & Automatic Verifier -->
+    <!-- Main Content: Cards Tracker & Automatic Verifier -->
     <section class="cards-section">
       <!-- Cards Grid Container -->
       <div id="cardsGrid" class="cards-grid">

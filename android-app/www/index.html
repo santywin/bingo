@@ -35,24 +35,6 @@
     </div>
   </header>
 
-  <!-- Urgent One-Away & Bingo Banner -->
-  <section id="statusAlertsBar" class="alerts-bar mobile-alerts-bar">
-    <div class="alert-stat bingo-stat" id="statBingoBox">
-      <span class="stat-count" id="statBingoCount">0</span>
-      <span class="stat-label">¡BINGO!</span>
-    </div>
-    <div class="alert-stat oneaway-stat" id="statOneAwayBox">
-      <span class="stat-count" id="statOneAwayCount">0</span>
-      <span class="stat-label">A 1 bola</span>
-    </div>
-    <div class="waiting-balls-container" id="waitingBallsContainer">
-      <span class="waiting-title">🔥 Ganadoras:</span>
-      <div id="waitingBallsList" class="waiting-balls-list">
-        <span class="muted-hint">Marca bolas abajo para ver cuáles te hacen ganar.</span>
-      </div>
-    </div>
-  </section>
-
   <!-- Sticky Mobile Number Caller & Quick Dab Bar (Solo ingreso por teclado numérico) -->
   <section class="mobile-sticky-caller">
     <form id="quickDabForm" class="quick-dab-form mobile-quick-dab" autocomplete="off">
@@ -69,35 +51,6 @@
       <span class="recent-label">Cantadas (<span id="calledCount">0</span>):</span>
       <div id="recentBallsList" class="recent-balls-list">
         <span class="empty-history">Ninguna marcada</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Filter & Sort Bar -->
-  <section class="top-cards-toolbar-wrapper">
-    <div class="cards-toolbar mobile-cards-toolbar">
-      <div class="filter-tabs" role="tablist">
-        <button class="filter-tab active" data-filter="all" role="tab">
-          Todos (<span id="countFilterAll">0</span>)
-        </button>
-        <button class="filter-tab tab-bingo" data-filter="bingo" role="tab">
-          🏆 (<span id="countFilterBingo">0</span>)
-        </button>
-        <button class="filter-tab tab-oneaway" data-filter="oneaway" role="tab">
-          🔥 A 1 (<span id="countFilterOneAway">0</span>)
-        </button>
-        <button class="filter-tab tab-twoaway" data-filter="twoaway" role="tab">
-          ⚡ A 2 (<span id="countFilterTwoAway">0</span>)
-        </button>
-      </div>
-
-      <div class="toolbar-controls">
-        <select id="sortCardsSelect" class="sort-select">
-          <option value="closest">Más cerca primero</option>
-          <option value="id">Por orden</option>
-          <option value="name">Por nombre</option>
-        </select>
-        <button type="button" id="btnExportImport" class="btn btn-xs btn-ghost">💾</button>
       </div>
     </div>
   </section>

@@ -700,50 +700,18 @@
     renderCardsGrid(evaluations, calledSet);
   }
 
-  function renderHeaderAndAlerts(activePatterns, bingoEvals, oneAwayEvals, globalNeededMap) {
+  function renderHeaderAndAlerts(activePatterns) {
     // Botón de sonido
-    document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+    const soundIconEl = document.getElementById('soundIcon');
+    if (soundIconEl) soundIconEl.textContent = state.soundEnabled ? '🔊' : '🔇';
 
     // Etiqueta del patrón activo
     const patternLabel =
       activePatterns.length === 1
         ? activePatterns[0].name
         : `${activePatterns.length} Patrones Activos`;
-    document.getElementById('activePatternLabel').textContent = patternLabel;
-
-    // Contadores de alerta rápida
-    const statBingoBox = document.getElementById('statBingoBox');
-    const statOneAwayBox = document.getElementById('statOneAwayBox');
-    document.getElementById('statBingoCount').textContent = bingoEvals.length;
-    document.getElementById('statOneAwayCount').textContent = oneAwayEvals.length;
-
-    statBingoBox.classList.toggle('has-bingo', bingoEvals.length > 0);
-    statOneAwayBox.classList.toggle('has-oneaway', oneAwayEvals.length > 0);
-
-    // Lista de bolas críticas ("Bolas para ganar ahora")
-    const waitingBallsList = document.getElementById('waitingBallsList');
-    waitingBallsList.innerHTML = '';
-
-    if (globalNeededMap.size === 0) {
-      const span = document.createElement('span');
-      span.className = 'muted-hint';
-      span.textContent =
-        state.calledNumbers.length === 0
-          ? 'Marca números en el tablero para ver qué bolas te hacen ganar.'
-          : 'Ningún cartón está a 1 bola todavía.';
-      waitingBallsList.appendChild(span);
-    } else {
-      const sortedNeeded = Array.from(globalNeededMap.entries()).sort((a, b) => a[0] - b[0]);
-      sortedNeeded.forEach(([num, cardCount]) => {
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'waiting-ball-chip';
-        chip.title = `Haz clic para marcar ${formatBallLabel(num)} (${cardCount} cartón/es la esperan)`;
-        chip.innerHTML = `${formatBallLabel(num)}${cardCount > 1 ? ` <small>(×${cardCount})</small>` : ''}`;
-        chip.addEventListener('click', () => toggleBall(num));
-        waitingBallsList.appendChild(chip);
-      });
-    }
+    const activePatternEl = document.getElementById('activePatternLabel');
+    if (activePatternEl) activePatternEl.textContent = patternLabel;
   }
 
   function renderMasterBoard(calledSet, globalNeededMap) {
@@ -777,17 +745,8 @@
     }
   }
 
-  function renderCardsToolbarCounts(allCount, bingoCount, oneAwayCount, twoAwayCount) {
-    document.getElementById('countFilterAll').textContent = allCount;
-    document.getElementById('countFilterBingo').textContent = bingoCount;
-    document.getElementById('countFilterOneAway').textContent = oneAwayCount;
-    document.getElementById('countFilterTwoAway').textContent = twoAwayCount;
-
-    document.querySelectorAll('.filter-tab').forEach((tab) => {
-      tab.classList.toggle('active', tab.dataset.filter === state.filterMode);
-    });
-
-    document.getElementById('sortCardsSelect').value = state.sortBy;
+  function renderCardsToolbarCounts() {
+    // Barra de filtros eliminada por preferencia del usuario (se muestran siempre todos los cartones)
   }
 
   function renderCardsGrid(evaluations, calledSet) {
@@ -1717,33 +1676,11 @@
     // Deshacer última bola marcada
     document.getElementById('btnUndoLast').addEventListener('click', undoLastBall);
 
-    // Filtros de cartones
-    document.querySelectorAll('.filter-tab').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        state.filterMode = tab.dataset.filter;
-        renderAll(null);
-      });
-    });
-
-    // Clic en las cajas superiores de estadística filtra directamente
-    document.getElementById('statBingoBox').addEventListener('click', () => {
-      state.filterMode = state.filterMode === 'bingo' ? 'all' : 'bingo';
-      renderAll(null);
-    });
-    document.getElementById('statOneAwayBox').addEventListener('click', () => {
-      state.filterMode = state.filterMode === 'oneaway' ? 'all' : 'oneaway';
-      renderAll(null);
-    });
-
-    // Ordenamiento de cartones
-    document.getElementById('sortCardsSelect').addEventListener('change', (e) => {
-      state.sortBy = e.target.value;
-      saveState();
-      renderAll(null);
-    });
-
     // Modal de respaldo: Compartir por WhatsApp, Copiar código, Compartir nativo e Importar
-    document.getElementById('btnExportImport').addEventListener('click', openBackupModal);
+    const btnExportImport = document.getElementById('btnExportImport');
+    if (btnExportImport) {
+      btnExportImport.addEventListener('click', openBackupModal);
+    }
 
     const btnShareWhatsApp = document.getElementById('btnShareWhatsApp');
     if (btnShareWhatsApp) {
