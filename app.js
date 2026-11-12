@@ -102,40 +102,40 @@
   const PRESET_PATTERNS = [
     {
       id: 'line_horizontal',
-      name: 'Línea Simple Horizontal',
-      description: 'Cualquiera de las 5 filas horizontales',
+      name: 'Quina Horizontal',
+      description: 'Completa cualquiera de las 5 filas',
       isCustom: false,
       previewMask: indicesToMask([10, 11, 12, 13, 14]),
       masks: HORIZONTAL_LINE_INDICES.map(indicesToMask),
     },
     {
       id: 'line_vertical',
-      name: 'Línea Simple Vertical',
-      description: 'Cualquiera de las 5 columnas verticales (B, I, N, G, O)',
+      name: 'Quina Vertical',
+      description: 'Completa cualquiera de las 5 columnas',
       isCustom: false,
       previewMask: indicesToMask([2, 7, 12, 17, 22]),
       masks: VERTICAL_LINE_INDICES.map(indicesToMask),
     },
     {
       id: 'line_diagonal',
-      name: 'Diagonales',
-      description: 'Cualquiera de las 2 líneas diagonales principales',
+      name: 'Quina Diagonal',
+      description: 'Completa cualquiera de las 2 diagonales',
       isCustom: false,
       previewMask: indicesToMask([0, 6, 12, 18, 24]),
       masks: DIAGONAL_LINE_INDICES.map(indicesToMask),
     },
     {
       id: 'single_line',
-      name: 'Línea Simple (Todas)',
-      description: 'Cualquier línea horizontal, vertical o diagonal (12 opciones)',
+      name: 'Quina (Cualquier dirección)',
+      description: 'Completa una quina horizontal, vertical o diagonal',
       isCustom: false,
       previewMask: indicesToMask([0, 1, 2, 3, 4]),
       masks: LINE_INDICES.map(indicesToMask),
     },
     {
       id: 'two_lines',
-      name: 'Dos Líneas',
-      description: 'Cualesquiera 2 líneas completas (horizontales, verticales o diagonales)',
+      name: 'Dos Quinas',
+      description: 'Completa dos quinas',
       isCustom: false,
       previewMask: indicesToMask([0, 1, 2, 3, 4, 20, 21, 22, 23, 24]),
       masks: buildTwoLinesMasks(),
@@ -403,7 +403,7 @@
   let state = {
     cards: [],
     calledNumbers: [], // Arreglo en orden cronológico de marcado
-    activePatternIds: ['single_line'], // Permite 1 o varios patrones activos
+    activePatternIds: ['line_horizontal'],
     customPatterns: [],
     soundEnabled: true,
     patternsMinimized: false,
@@ -422,7 +422,9 @@
         if (Array.isArray(parsed.cards)) state.cards = parsed.cards;
         if (Array.isArray(parsed.calledNumbers)) state.calledNumbers = parsed.calledNumbers;
         if (Array.isArray(parsed.activePatternIds) && parsed.activePatternIds.length > 0) {
-          state.activePatternIds = parsed.activePatternIds;
+          state.activePatternIds = parsed.activePatternIds.map((id) =>
+            id === 'single_line' ? 'line_horizontal' : id
+          );
         }
         if (Array.isArray(parsed.customPatterns)) state.customPatterns = parsed.customPatterns;
         if (typeof parsed.soundEnabled === 'boolean') state.soundEnabled = parsed.soundEnabled;
@@ -434,6 +436,10 @@
     } catch (_) {
       // ignore corrupted storage
     }
+
+    const availablePatternIds = new Set(PRESET_PATTERNS.slice(0, 3).map((pattern) => pattern.id));
+    const savedPatternId = state.activePatternIds.find((id) => availablePatternIds.has(id));
+    state.activePatternIds = [savedPatternId || 'line_horizontal'];
 
     if (state.cards.length === 0) {
       state.cards = createSampleCards(4, 1);
@@ -472,7 +478,7 @@
   }
 
   function getAllPatterns() {
-    return [...PRESET_PATTERNS, ...state.customPatterns];
+    return PRESET_PATTERNS.slice(0, 3);
   }
 
   function getActivePatterns() {
@@ -718,7 +724,7 @@
       if (state.calledNumbers.length === 0) {
         const empty = document.createElement('span');
         empty.className = 'empty-history';
-        empty.textContent = 'Ninguna bola marcada aún';
+        empty.textContent = 'Aún no hay bolas cantadas';
         recentContainer.appendChild(empty);
       } else {
         const lastBalls = state.calledNumbers.slice().reverse();
@@ -825,7 +831,7 @@
         ? `Ganador: ${winningPatternNames.join(', ')}`
         : state.activePatternIds.length > 1
           ? `Más cerca de: ${bestPatternName}`
-          : `Patrón: ${bestPatternName}`;
+          : `Quina: ${bestPatternName}`;
 
       // Construir cabecera y letras
       const headerBar = document.createElement('div');
@@ -951,7 +957,6 @@
       state.activePatternIds.push(patternId);
       if (patternObj) {
         state.editorCells = (patternObj.previewMask || patternObj.masks[0]).slice();
-        renderCustomPatternEditorGrid();
       }
     }
     saveState();
@@ -964,7 +969,6 @@
     state.activePatternIds = [patternId];
     if (patternObj) {
       state.editorCells = (patternObj.previewMask || patternObj.masks[0]).slice();
-      renderCustomPatternEditorGrid();
     }
     saveState();
     syncPreviousWinnerSets();
@@ -974,51 +978,15 @@
 
   function renderPatternModalList() {
     const container = document.getElementById('presetPatternsList');
-    const chipsBar = document.getElementById('selectedPatternsChipsBar');
-    const countSpan = document.getElementById('modalSelectedPatternsCount');
-    const query = (document.getElementById('patternSearchInput').value || '').trim().toLowerCase();
-
     container.innerHTML = '';
     const activePatterns = getActivePatterns();
-    if (countSpan) countSpan.textContent = activePatterns.length;
-
-    // Renderizar chips de patrones activos arriba del buscador
-    if (chipsBar) {
-      chipsBar.innerHTML = '';
-      activePatterns.forEach((pat) => {
-        const chip = document.createElement('span');
-        chip.className = 'selected-pattern-chip';
-        const label = document.createElement('span');
-        label.textContent = `✓ ${pat.name}`;
-        chip.appendChild(label);
-
-        if (activePatterns.length > 1) {
-          const removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.title = `Desmarcar ${pat.name}`;
-          removeBtn.innerHTML = '&times;';
-          removeBtn.addEventListener('click', () => togglePatternSelection(pat.id));
-          chip.appendChild(removeBtn);
-        }
-        chipsBar.appendChild(chip);
-      });
-    }
-
-    const allPatterns = getAllPatterns().filter((p) => {
-      if (!query) return true;
-      return (
-        p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query)
-      );
-    });
-
-    allPatterns.forEach((pattern) => {
+    getAllPatterns().forEach((pattern) => {
       const isSelected = state.activePatternIds.includes(pattern.id);
       const card = document.createElement('div');
       card.className = 'pattern-option-card' + (isSelected ? ' selected' : '');
       card.title = isSelected
-        ? 'Haz clic para desmarcar este patrón'
-        : 'Haz clic para marcar y agregar este patrón a la partida';
+        ? 'Quina activa'
+        : 'Activar esta quina';
 
       // Casilla visual de verificación (checkbox)
       const checkBadge = document.createElement('span');
@@ -1051,38 +1019,11 @@
             : '1 figura'
           : `${pattern.masks.length} variantes`;
 
-      const onlyThisBtn = document.createElement('button');
-      onlyThisBtn.type = 'button';
-      onlyThisBtn.className = 'btn-only-this-pattern';
-      onlyThisBtn.textContent = 'Solo este';
-      onlyThisBtn.title = 'Dejar únicamente este patrón activo y desmarcar los demás';
-      onlyThisBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectSinglePattern(pattern.id, pattern);
-      });
-
       card.appendChild(miniGrid);
       card.appendChild(nameEl);
       card.appendChild(subEl);
-      card.appendChild(onlyThisBtn);
 
-      if (pattern.isCustom) {
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'btn-delete-custom-pattern';
-        delBtn.title = 'Eliminar patrón personalizado';
-        delBtn.innerHTML = '&times;';
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          deleteCustomPattern(pattern.id);
-        });
-        card.appendChild(delBtn);
-      }
-
-      // Clic simple marca o desmarca el patrón directamente (multiselección directa)
-      card.addEventListener('click', () => {
-        togglePatternSelection(pattern.id, pattern);
-      });
+      card.addEventListener('click', () => selectSinglePattern(pattern.id, pattern));
 
       container.appendChild(card);
     });
@@ -1405,49 +1346,9 @@
     // Abrir modal de patrones
     const openPatterns = () => {
       renderPatternModalList();
-      renderCustomPatternEditorGrid();
       document.getElementById('patternModal').classList.remove('hidden');
     };
     document.getElementById('btnOpenPatternModal').addEventListener('click', openPatterns);
-
-    // Buscador de patrones
-    document.getElementById('patternSearchInput').addEventListener('input', renderPatternModalList);
-
-    // Botones rápidos de selección múltiple de patrones
-    document.getElementById('btnSelectOnlyFirstPattern').addEventListener('click', () => {
-      const firstId = state.activePatternIds[0] || 'single_line';
-      state.activePatternIds = [firstId];
-      saveState();
-      syncPreviousWinnerSets();
-      renderPatternModalList();
-      renderAll(null);
-    });
-    document.getElementById('btnSelectAllPatterns').addEventListener('click', () => {
-      state.activePatternIds = getAllPatterns().map((p) => p.id);
-      saveState();
-      syncPreviousWinnerSets();
-      renderPatternModalList();
-      renderAll(null);
-    });
-
-    // Herramientas del editor 5x5 de patrones personalizados
-    document.getElementById('btnEditorClear').addEventListener('click', () => {
-      state.editorCells = new Array(25).fill(0);
-      renderCustomPatternEditorGrid();
-    });
-    document.getElementById('btnEditorFill').addEventListener('click', () => {
-      state.editorCells = new Array(25).fill(1);
-      renderCustomPatternEditorGrid();
-    });
-    document.getElementById('btnEditorInvert').addEventListener('click', () => {
-      state.editorCells = state.editorCells.map((v) => (v === 1 ? 0 : 1));
-      renderCustomPatternEditorGrid();
-    });
-    document.getElementById('btnEditorRotate').addEventListener('click', () => {
-      state.editorCells = rotateMask90(state.editorCells);
-      renderCustomPatternEditorGrid();
-    });
-    document.getElementById('btnSaveCustomPattern').addEventListener('click', saveCustomPattern);
 
     // Abrir modal de nuevo cartón
     document.getElementById('btnOpenCardModal').addEventListener('click', () => {

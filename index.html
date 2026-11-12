@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Bingo Win — Verificador de Cartones y Editor de Patrones</title>
+  <title>Bingo Win — Control sencillo de quinas</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -17,7 +17,7 @@
       </div>
       <div>
         <h1>Bingo <span class="badge-clean">WIN</span></h1>
-        <p class="subtitle">Seguimiento Automático de Cartones y Editor de Patrones</p>
+        <p class="subtitle">Marca las bolas y revisa tus cartones al instante</p>
       </div>
     </div>
 
@@ -26,7 +26,7 @@
         <span id="soundIcon">🔊</span>
       </button>
       <button id="btnOpenPatternModal" class="btn btn-secondary">
-        <span>🎯</span> Patrón: <strong id="activePatternLabel">Línea Simple</strong>
+        <span>🎯</span> <strong id="activePatternLabel">Quina Horizontal</strong>
       </button>
       <button id="btnOpenCardModal" class="btn btn-primary">
         <span>➕</span> Nuevo Cartón
@@ -47,22 +47,22 @@
     <aside id="callerPanel" class="caller-panel minimized">
       <div class="quick-dab-bar">
         <form id="quickDabForm" class="quick-input-form" autocomplete="off" novalidate>
-          <input type="number" id="quickNumberInput" min="1" max="999" placeholder="Escribe # de bola (ej: 42) + Enter"
+          <input type="number" id="quickNumberInput" min="1" max="999" placeholder="Número cantado (ej. 42)"
             aria-label="Ingresar número a marcar" />
           <button type="submit" class="btn btn-primary">Marcar</button>
         </form>
         <div class="caller-mini-actions">
           <button id="btnUndoLast" class="btn btn-ghost" title="Deshacer última bola marcada" disabled>
-            ↩️ Deshacer última bola
+            ↩️ Deshacer
           </button>
         </div>
       </div>
 
       <!-- Recent History Strip -->
       <div class="history-strip">
-        <span class="history-label">Cantadas (<strong id="calledCount">0</strong>):</span>
+        <span class="history-label">Bolas cantadas (<strong id="calledCount">0</strong>):</span>
         <div id="recentBallsList" class="recent-balls">
-          <span class="empty-history">Ninguna bola marcada aún</span>
+          <span class="empty-history">Aún no hay bolas cantadas</span>
         </div>
       </div>
     </aside>
@@ -76,93 +76,29 @@
     </section>
   </main>
 
-  <!-- MODAL 1: Pattern Selector & Custom Pattern Editor (Point 4) -->
+  <!-- MODAL 1: Selector de quina -->
   <div id="patternModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
     aria-labelledby="patternModalTitle">
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <div>
-          <h2 id="patternModalTitle">🎯 Selector y Editor de Patrones de Bingo</h2>
-          <p class="modal-subtitle">Elige un patrón predefinido o dibuja tus propias reglas de casa en la cuadrícula
-            5×5.</p>
+          <h2 id="patternModalTitle">🎯 Elige la quina</h2>
+          <p class="modal-subtitle">Selecciona cómo se gana esta partida.</p>
         </div>
         <button class="btn-close" data-close-modal="patternModal" aria-label="Cerrar">&times;</button>
       </div>
 
-      <div class="modal-body pattern-modal-layout">
-        <!-- Left column: Preset & Saved Custom Patterns List -->
+      <div class="modal-body pattern-modal-simple">
         <div class="pattern-list-column">
           <div class="pattern-category-header">
             <div>
-              <h3>Patrones para Ganar (<span id="modalSelectedPatternsCount">1</span> marcados)</h3>
-              <span class="hint-text">Toca cualquier patrón para marcarlo o desmarcarlo (puedes elegir varios a la
-                vez)</span>
+              <h3>Forma de ganar</h3>
+              <span class="hint-text">Toca una opción para dejarla activa.</span>
             </div>
-            <div class="pattern-bulk-btns">
-              <button type="button" id="btnSelectOnlyFirstPattern" class="btn btn-xs btn-ghost"
-                title="Dejar activo únicamente el primer patrón">
-                Dejar solo 1
-              </button>
-              <button type="button" id="btnSelectAllPatterns" class="btn btn-xs btn-ghost"
-                title="Activar todos los patrones de la lista">
-                Marcar todos
-              </button>
-            </div>
-          </div>
-
-          <!-- Active selected pattern chips -->
-          <div id="selectedPatternsChipsBar" class="selected-patterns-chips">
-            <!-- Populated by JS -->
-          </div>
-
-          <div class="pattern-search-bar">
-            <input type="text" id="patternSearchInput" placeholder="Buscar patrón (ej. Línea, X, Marco, Lleno...)" />
           </div>
 
           <div id="presetPatternsList" class="patterns-grid-selector">
             <!-- Populated by JS -->
-          </div>
-        </div>
-
-        <!-- Right column: Custom Pattern Creator / Inspector -->
-        <div class="pattern-editor-column">
-          <h3>✏️ Creador de Patrón Personalizado</h3>
-          <p class="editor-instructions">
-            Haz clic en las casillas de abajo para encender/apagar las posiciones que deben marcarse para cantar Bingo.
-          </p>
-
-          <div class="custom-editor-form">
-            <label class="form-label">
-              Nombre del Patrón
-              <input type="text" id="customPatternName" placeholder="Ej: Reloj de Arena, Letra M, Esquinas..."
-                maxlength="40" />
-            </label>
-
-            <div class="editor-bingo-header">
-              <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
-            </div>
-            <div id="customPatternEditorGrid" class="editor-grid-5x5">
-              <!-- 25 interactive cells -->
-            </div>
-
-            <div class="editor-quick-tools">
-              <button type="button" id="btnEditorClear" class="btn btn-xs btn-ghost">Limpiar</button>
-              <button type="button" id="btnEditorInvert" class="btn btn-xs btn-ghost">Invertir</button>
-              <button type="button" id="btnEditorRotate" class="btn btn-xs btn-ghost" title="Rotar diseño 90 grados">🔄
-                Rotar 90°</button>
-              <button type="button" id="btnEditorFill" class="btn btn-xs btn-ghost">Llenar todo</button>
-            </div>
-
-            <label class="checkbox-row">
-              <input type="checkbox" id="customPatternIncludeRotations" />
-              <span>Permitir las 4 rotaciones (0°, 90°, 180°, 270°) como válidas</span>
-            </label>
-
-            <div class="editor-save-actions">
-              <button type="button" id="btnSaveCustomPattern" class="btn btn-primary btn-block">
-                💾 Guardar y Activar Patrón Personalizado
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -263,7 +199,7 @@
       <div class="bingo-toast-icon">🎉</div>
       <div class="bingo-toast-text">
         <h3 id="bingoToastTitle">¡BINGO DETECTADO!</h3>
-        <p id="bingoToastDesc">El Cartón #1 ha completado el patrón.</p>
+        <p id="bingoToastDesc">El Cartón #1 ha completado la quina.</p>
       </div>
       <button id="btnViewWinningCards" class="btn btn-sm btn-light">Ver Ganadores</button>
       <button id="btnDismissToast" class="btn-close-toast" aria-label="Cerrar aviso">&times;</button>
