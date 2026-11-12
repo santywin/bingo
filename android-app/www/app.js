@@ -753,6 +753,30 @@
     const grid = document.getElementById('cardsGrid');
     grid.innerHTML = '';
 
+    // Si se está viendo solo una parte de los cartones, mostrar botón para volver a ver todos
+    if (state.filterMode !== 'all') {
+      const filterLabels = { bingo: '🏆 ganadores', oneaway: '🔥 a 1 bola', twoaway: '⚡ a 2 bolas' };
+      const bar = document.createElement('div');
+      bar.className = 'filter-return-bar';
+      bar.style.cssText =
+        'grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:0.6rem;' +
+        'padding:0.6rem 0.85rem;border-radius:10px;background:rgba(59,130,246,0.15);' +
+        'border:1px solid rgba(59,130,246,0.45);font-weight:600;flex-wrap:wrap;';
+      const label = document.createElement('span');
+      label.textContent = `Mostrando solo cartones ${filterLabels[state.filterMode] || ''}`;
+      const btnAll = document.createElement('button');
+      btnAll.type = 'button';
+      btnAll.className = 'btn btn-primary btn-sm';
+      btnAll.textContent = `📋 Ver todos (${state.cards.length})`;
+      btnAll.addEventListener('click', () => {
+        state.filterMode = 'all';
+        renderAll(null);
+      });
+      bar.appendChild(label);
+      bar.appendChild(btnAll);
+      grid.appendChild(bar);
+    }
+
     // Filtrar
     let filtered = evaluations.filter((ev) => {
       if (state.filterMode === 'bingo') return ev.isBingo;
@@ -779,7 +803,7 @@
       empty.className = 'empty-cards-state';
       empty.innerHTML = `
         <h3>No hay cartones en esta vista</h3>
-        <p>Puedes cambiar el filtro arriba o agregar nuevos cartones físicos o aleatorios.</p>
+        <p>Toca "📋 Ver todos" para volver a ver todos tus cartones o agrega uno nuevo.</p>
       `;
       grid.appendChild(empty);
       return;
