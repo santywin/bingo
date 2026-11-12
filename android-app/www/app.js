@@ -1426,14 +1426,14 @@
     };
     const jsonStr = JSON.stringify(compactPayload);
     const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    return `SANTY-BINGO:${b64}`;
+    return `BINGO-WIN:${b64}`;
   }
 
   function buildWhatsAppShareMessage() {
     const code = buildCompactShareCode();
     const count = state.cards.length;
     return (
-      `🎲 *Mis Tablas de SantyWin Bingo (${count} ${count === 1 ? 'cartón' : 'cartones'})*\n` +
+      `🎲 *Mis Tablas de Bingo Win (${count} ${count === 1 ? 'cartón' : 'cartones'})*\n` +
       `Copia todo este mensaje y en la app ve a *💾 Respaldo -> Pegar y Cargar*:\n\n` +
       `${code}`
     );
@@ -1444,8 +1444,8 @@
     const trimmed = rawText.trim();
     if (!trimmed) return null;
 
-    // 1. Detectar código compacto SANTY-BINGO:<base64> (incluso dentro de un mensaje de WhatsApp)
-    const codeMatch = trimmed.match(/SANTY-BINGO:([A-Za-z0-9+/=_-]+)/);
+    // 1. Detectar código compacto BINGO-WIN:<base64> o SANTY-BINGO:<base64> (incluso dentro de un mensaje de WhatsApp)
+    const codeMatch = trimmed.match(/(?:BINGO-WIN|SANTY-BINGO):([A-Za-z0-9+/=_-]+)/);
     if (codeMatch && codeMatch[1]) {
       try {
         const cleanB64 = codeMatch[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -1601,7 +1601,7 @@
     if (statusBox) statusBox.classList.add('hidden');
     if (textarea) {
       textarea.value = '';
-      textarea.placeholder = 'Pega aquí el mensaje o código SANTY-BINGO:... que te enviaron por WhatsApp';
+      textarea.placeholder = 'Pega aquí el mensaje o código BINGO-WIN:... que te enviaron por WhatsApp';
     }
     modal.classList.remove('hidden');
   }
@@ -1757,7 +1757,7 @@
         if (capPlugins && capPlugins.Share) {
           try {
             await capPlugins.Share.share({
-              title: 'Mis Tablas de SantyWin Bingo',
+              title: 'Mis Tablas de Bingo Win',
               text: msg,
               dialogTitle: 'Compartir mis tablas por WhatsApp',
             });
@@ -1769,7 +1769,7 @@
         if (navigator.share) {
           try {
             await navigator.share({
-              title: 'Mis Tablas de SantyWin Bingo',
+              title: 'Mis Tablas de Bingo Win',
               text: msg,
             });
             return;
@@ -1802,7 +1802,7 @@
         const jsonContent = buildBackupJsonString();
         const msg = buildWhatsAppShareMessage();
         const dateStr = new Date().toISOString().slice(0, 10);
-        const fileName = `santywin-bingo-${dateStr}.json`;
+        const fileName = `bingo-win-${dateStr}.json`;
 
         // 1. En Android APK (Capacitor Filesystem + Share), crear el archivo .json y compartirlo por WhatsApp
         const capPlugins = window.Capacitor && window.Capacitor.Plugins;
@@ -1817,7 +1817,7 @@
             if (savedFile && savedFile.uri) {
               await capPlugins.Share.share({
                 title: fileName,
-                text: '🎲 Te comparto mis tablas de SantyWin Bingo',
+                text: '🎲 Te comparto mis tablas de Bingo Win',
                 url: savedFile.uri,
                 dialogTitle: 'Enviar archivo .json por WhatsApp',
               });
@@ -1827,7 +1827,7 @@
 
           try {
             await capPlugins.Share.share({
-              title: 'Mis Tablas de SantyWin Bingo',
+              title: 'Mis Tablas de Bingo Win',
               text: msg,
               dialogTitle: 'Compartir mis tablas por WhatsApp',
             });
@@ -1841,7 +1841,7 @@
             const file = new File([jsonContent], fileName, { type: 'application/json' });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
               await navigator.share({
-                title: 'Mis Tablas de SantyWin Bingo',
+                title: 'Mis Tablas de Bingo Win',
                 text: msg,
                 files: [file],
               });
@@ -1851,7 +1851,7 @@
 
           try {
             await navigator.share({
-              title: 'Mis Tablas de SantyWin Bingo',
+              title: 'Mis Tablas de Bingo Win',
               text: msg,
             });
             return;
@@ -1915,7 +1915,7 @@
 
       const parsed = parseBackupPayload(rawText);
       if (!parsed) {
-        alert('El texto pegado no contiene un respaldo válido de SantyWin Bingo. Asegúrate de copiar el mensaje completo.');
+        alert('El texto pegado no contiene un respaldo válido de Bingo Win. Asegúrate de copiar el mensaje completo.');
         return;
       }
 
@@ -1946,7 +1946,7 @@
       reader.onload = (ev) => {
         const parsed = parseBackupPayload(ev.target.result);
         if (!parsed) {
-          alert('El archivo seleccionado no es un respaldo válido de SantyWin Bingo.');
+          alert('El archivo seleccionado no es un respaldo válido de Bingo Win.');
           return;
         }
         const replace = confirm(

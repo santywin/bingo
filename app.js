@@ -1613,7 +1613,7 @@
       const a = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `santywin-bingo-respaldo-${dateStr}.json`;
+      a.download = `bingo-win-respaldo-${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
